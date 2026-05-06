@@ -67,12 +67,24 @@ module Api
              Warden::JWTAuth::Errors::RevokedToken,
              Warden::JWTAuth::Errors::NilUser,
              Warden::JWTAuth::Errors::WrongScope,
-             Warden::JWTAuth::Errors::WrongAud
+             Warden::JWTAuth::Errors::WrongAud => exception
+        Rails.logger.debug { "JWT authentication failed: #{exception.class} - #{exception.message}" }
         nil
       end
 
       def bearer_token
-        Warden::JWTAuth::HeaderParser.from_env(request.env)
+        Warden::JWTAuth::HeaderParser.from_env(request.env) || token_from_authorization_header
+      end
+
+      def token_from_authorization_header
+        authorization = request.authorization.presence ||
+                        request.headers['Authorization'].presence ||
+                        request.env['HTTP_AUTHORIZATION'].presence
+
+        return nil if authorization.blank?
+
+        scheme, token = authorization.to_s.split(/\s+/, 2)
+        scheme.casecmp('Bearer').zero? ? token : nil
       end
     end
   end

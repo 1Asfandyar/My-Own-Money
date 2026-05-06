@@ -1,38 +1,34 @@
 module Api
   module V1
     class AuthController < ApiController
-      def create
-        user = User.find_for_authentication(email: login_params[:email])
-
-        return unauthorized_response('Invalid email or password') unless user&.valid_password?(login_params[:password])
-
-        token, payload = Warden::JWTAuth::UserEncoder.new.call(user, JWT_SCOPE, JWT_AUDIENCE)
-        response.set_header('Authorization', "Bearer #{token}")
-
-        render json: {
-          success: true,
-          token: token,
-          expires_at: Time.zone.at(payload['exp']),
-          user: Api::V1::UserSerializer.render_as_hash(user, view: :show)
-        }, status: :ok
+      def signup
+        Api::V1::Auth::Signup.call(params.to_unsafe_h) do |result|
+          result.success { |data| authenticated_response(data, :created) }
+          result.failure { |errors| unprocessable_entity(errors) }
+        end
       end
 
-      def destroy
-        token = bearer_token
+      def login
+        Api::V1::Auth::Login.call(params.to_unsafe_h) do |result|
+          result.success { |data| authenticated_response(data, :ok) }
+          result.failure(:unauthorized) { unauthorized_response('Invalid email or password') }
+          result.failure { |errors| unprocessable_entity(errors) }
+        end
+      end
 
-        return unauthorized_response unless token
-
-        Warden::JWTAuth::TokenRevoker.new.call(token)
-
-        render json: { success: true, message: 'Logged out successfully' }, status: :ok
-      rescue JWT::DecodeError
-        unauthorized_response
+      def logout
+        Api::V1::Auth::Logout.call(token: bearer_token) do |result|
+          result.success { |data| render json: data, status: :ok }
+          result.failure(:unauthorized) { unauthorized_response }
+          result.failure { |errors| unprocessable_entity(errors) }
+        end
       end
 
       private
 
-      def login_params
-        params.fetch(:user, params).permit(:email, :password)
+      def authenticated_response(data, status)
+        response.set_header('Authorization', data.delete(:authorization))
+        render json: data, status: status
       end
     end
   end
