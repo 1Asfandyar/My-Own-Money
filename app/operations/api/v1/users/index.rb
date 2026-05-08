@@ -32,7 +32,7 @@ module Api
           scope = User.all.order(created_at: :desc)
           return scope if params[:query].blank?
 
-          scope.where('email ILIKE :query', query: "%#{params[:query]}%")
+          scope.where("email ILIKE :query", query: "%#{params[:query]}%")
         end
       end
     end

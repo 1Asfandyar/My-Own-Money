@@ -1,6 +1,6 @@
-require 'dry/matcher/result_matcher'
-require 'dry/monads'
-require 'dry/monads/do'
+require "dry/matcher/result_matcher"
+require "dry/monads"
+require "dry/monads/do"
 
 module Api
   module V1

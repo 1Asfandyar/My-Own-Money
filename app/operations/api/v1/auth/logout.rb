@@ -9,7 +9,7 @@ module Api
 
           Warden::JWTAuth::TokenRevoker.new.call(token)
 
-          Success(success: true, message: 'Logged out successfully')
+          Success(success: true, message: "Logged out successfully")
         rescue JWT::DecodeError
           Failure(:unauthorized)
         end

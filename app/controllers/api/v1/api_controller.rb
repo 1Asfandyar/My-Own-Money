@@ -27,15 +27,15 @@ module Api
         @current_user = decode_current_user
       end
 
-      def unauthorized_response(message = 'You are unauthorized to view this resource')
+      def unauthorized_response(message = "You are unauthorized to view this resource")
         render json: error_payload(message), status: :unauthorized
       end
 
-      def forbidden_response(message = 'You do not have access to perform this action')
+      def forbidden_response(message = "You do not have access to perform this action")
         render json: error_payload(message), status: :forbidden
       end
 
-      def not_found_response(message = 'The requested resource does not exist')
+      def not_found_response(message = "The requested resource does not exist")
         render json: error_payload(message), status: :not_found
       end
 
@@ -45,11 +45,11 @@ module Api
 
       def handle_standard_error(exception)
         Rails.logger.error(exception.full_message)
-        render json: error_payload('Something went wrong'), status: :internal_server_error
+        render json: error_payload("Something went wrong"), status: :internal_server_error
       end
 
       def error_payload(message)
-        { errors: [{ base: [message] }] }
+        { errors: [ { base: [ message ] } ] }
       end
 
       def normalize_errors(errors)
@@ -78,13 +78,13 @@ module Api
 
       def token_from_authorization_header
         authorization = request.authorization.presence ||
-                        request.headers['Authorization'].presence ||
-                        request.env['HTTP_AUTHORIZATION'].presence
+                        request.headers["Authorization"].presence ||
+                        request.env["HTTP_AUTHORIZATION"].presence
 
         return nil if authorization.blank?
 
         scheme, token = authorization.to_s.split(/\s+/, 2)
-        scheme.casecmp('Bearer').zero? ? token : nil
+        scheme.casecmp("Bearer").zero? ? token : nil
       end
     end
   end

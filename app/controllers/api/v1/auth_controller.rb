@@ -11,7 +11,7 @@ module Api
       def login
         Api::V1::Auth::Login.call(params.to_unsafe_h) do |result|
           result.success { |data| authenticated_response(data, :ok) }
-          result.failure(:unauthorized) { unauthorized_response('Invalid email or password') }
+          result.failure(:unauthorized) { unauthorized_response("Invalid email or password") }
           result.failure { |errors| unprocessable_entity(errors) }
         end
       end
@@ -27,7 +27,7 @@ module Api
       private
 
       def authenticated_response(data, status)
-        response.set_header('Authorization', data.delete(:authorization))
+        response.set_header("Authorization", data.delete(:authorization))
         render json: data, status: status
       end
     end

@@ -19,6 +19,6 @@ class AdminUser < ApplicationRecord
   private
 
   def only_one_admin_user
-    errors.add(:base, 'Only one admin user is allowed') if AdminUser.exists?
+    errors.add(:base, "Only one admin user is allowed") if AdminUser.exists?
   end
 end

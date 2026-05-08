@@ -25,7 +25,7 @@ module Api
         private
 
         def login_params(params)
-          params.fetch(:user, params.fetch('user', {}))
+          params.fetch(:user, params.fetch("user", {}))
         end
 
         def auth_payload(user)
@@ -39,7 +39,7 @@ module Api
             success: true,
             token: token,
             authorization: "Bearer #{token}",
-            expires_at: Time.zone.at(payload['exp']),
+            expires_at: Time.zone.at(payload["exp"]),
             user: Api::V1::UserSerializer.render_as_hash(user, view: :show)
           }
         end

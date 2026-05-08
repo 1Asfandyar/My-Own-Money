@@ -18,7 +18,7 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource "*",
       headers:     :any,
       methods:     %i[get post put patch delete options head],
-      expose:      ["Authorization"],  # required for devise-jwt token delivery
+      expose:      [ "Authorization" ],  # required for devise-jwt token delivery
       credentials: false              # set true only if you use cookie-based auth across origins
   end
 end

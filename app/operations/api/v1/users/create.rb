@@ -31,7 +31,7 @@ module Api
         attr_reader :current_user, :user
 
         def user_params(params)
-          params.fetch(:user, params.fetch('user', {}))
+          params.fetch(:user, params.fetch("user", {}))
         end
 
         def authorize

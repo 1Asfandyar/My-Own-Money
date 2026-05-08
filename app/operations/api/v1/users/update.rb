@@ -35,7 +35,7 @@ module Api
         attr_reader :attributes, :current_user, :user
 
         def params_for_contract(params)
-          params.fetch(:user, params.fetch('user', {})).merge(id: params[:id] || params['id'])
+          params.fetch(:user, params.fetch("user", {})).merge(id: params[:id] || params["id"])
         end
 
         def authorize

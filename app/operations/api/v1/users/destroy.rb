@@ -20,7 +20,7 @@ module Api
           yield authorize
 
           user.destroy
-          Success(success: true, message: 'User deleted')
+          Success(success: true, message: "User deleted")
         end
 
         private

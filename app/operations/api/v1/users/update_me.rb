@@ -30,7 +30,7 @@ module Api
         private
 
         def profile_params(params)
-          params.fetch(:user, params.fetch('user', {}))
+          params.fetch(:user, params.fetch("user", {}))
         end
 
         def update_user(user, attributes)
