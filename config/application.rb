@@ -7,34 +7,28 @@ require "active_record/railtie"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
-require "sprockets/railtie"
+require "sprockets/railtie"   # kept for ActiveAdmin's asset pipeline needs
 
-# Require the gems listed in Gemfile, including any gems
-# you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
 module Hopin
   class Application < Rails::Application
-    # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 7.0
+    # Load Rails 8 defaults.
+    # When upgrading incrementally, bump this one minor version at a time:
+    #   7.0 → 7.1 → 7.2 → 8.0
+    # Each bump may silently change framework behaviour — read the upgrade guide.
+    config.load_defaults 8.0
 
-    # Please, add to the `ignore` list any other `lib` subdirectories that do
-    # not contain `.rb` files, or that should not be reloaded or eager loaded.
-    # Common ones are `templates`, `generators`, or `middleware`, for example.
-    # config.autoload_lib(ignore: %w(assets tasks))
+    # Eager-load everything in lib/ except non-Ruby support directories.
+    # This catches Zeitwerk constant-loading errors at boot rather than at runtime.
+    config.autoload_lib(ignore: %w[assets tasks])
 
-    # Configuration for the application, engines, and railties goes here.
-    #
-    # These settings can be overridden in specific environments using the files
-    # in config/environments, which are processed later.
-    #
-    # config.time_zone = "Central Time (US & Canada)"
-    # config.eager_load_paths << Rails.root.join("extras")
-
-    # Only loads a smaller set of middleware suitable for API only apps.
-    # Middleware like session, flash, cookies can be added back manually.
-    # Skip views, helpers and assets when generating a new resource.
+    # API-only strips most middleware (sessions, cookies, views).
+    # We add the minimal subset back below so ActiveAdmin keeps working.
     config.api_only = true
+
+    # Middleware required by ActiveAdmin (session-based authentication + flash).
+    # Pure API controllers never touch these; the overhead is negligible.
     config.middleware.use Rack::MethodOverride
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# bin/dev — start the development server
+#
+# Uses overmind (preferred, tmux-based) or falls back to foreman.
+# Install: gem install overmind   OR   gem install foreman
+
+set -e
+
+if command -v overmind &>/dev/null; then
+  exec overmind start -f Procfile.dev "$@"
+elif command -v foreman &>/dev/null; then
+  exec foreman start -f Procfile.dev "$@"
+else
+  echo "Error: install overmind or foreman first."
+  echo "  gem install overmind   (requires tmux)"
+  echo "  gem install foreman"
+  exit 1
+fi

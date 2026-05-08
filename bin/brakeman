@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Brakeman static security scanner binstub.
+# Run: bin/brakeman
+# With no-pager (for CI): bin/brakeman --no-pager
+
+require "rubygems"
+require "bundler/setup"
+
+STDOUT.sync = true
+STDERR.sync = true
+
+load Gem.bin_path("brakeman", "brakeman")

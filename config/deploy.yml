@@ -1,0 +1,129 @@
+# config/deploy.yml — Kamal 2 deployment configuration
+#
+# SETUP STEPS:
+#   1. gem install kamal   (or add to Gemfile development group: gem "kamal")
+#   2. Replace all <placeholder> values below
+#   3. kamal setup          (first deploy — provisions server, sets secrets)
+#   4. kamal deploy         (subsequent deploys — rolling zero-downtime)
+#   5. kamal rollback       (undo last deploy)
+#
+# KAMAL CONCEPTS:
+#   service  — the logical app name (also prefixes Docker container names)
+#   image    — Docker image path in your registry
+#   servers  — SSH-accessible host(s)
+#   proxy    — kamal-proxy handles TLS + zero-downtime (replaces Nginx for many setups)
+#   accessories — long-running services Kamal manages (DB, Redis, etc.)
+#   secrets  — loaded from .kamal/secrets at deploy time (never committed)
+
+service: rupeerally
+image: <your-registry-username>/rupeerally   # e.g. ghcr.io/yourgithubuser/rupeerally
+
+# ── Servers ───────────────────────────────────────────────────────────────────
+servers:
+  web:
+    - <your.server.ip>          # e.g. 1.2.3.4
+    # For multiple app servers:
+    # - 1.2.3.5
+    # - 1.2.3.6
+
+  # Uncomment if you add Solid Queue for background jobs:
+  # job:
+  #   hosts:
+  #     - <your.server.ip>
+  #   cmd: bin/rails solid_queue:start
+  #   env:
+  #     clear:
+  #       RAILS_MAX_THREADS: "5"
+
+# ── Container registry ────────────────────────────────────────────────────────
+# GitHub Container Registry (ghcr.io) is free for public repos.
+# For private repos: Settings → Packages → visibility.
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME   # resolved from .kamal/secrets
+  password:
+    - KAMAL_REGISTRY_PASSWORD   # resolved from .kamal/secrets
+
+# ── Environment variables ─────────────────────────────────────────────────────
+env:
+  clear:
+    # Non-secret runtime config — safe to commit
+    RAILS_LOG_TO_STDOUT: "true"
+    RAILS_SERVE_STATIC_FILES: "true"   # Thruster/kamal-proxy serves assets, but keep as fallback
+    WEB_CONCURRENCY: "2"               # Puma workers (set to CPU count)
+    RAILS_MAX_THREADS: "3"             # Puma threads per worker
+    RAILS_LOG_LEVEL: "info"
+
+  secret:
+    # Resolved from .kamal/secrets at deploy time — never committed
+    - RAILS_MASTER_KEY               # config/master.key content
+    - DATABASE_URL                   # postgres://user:pass@host/hopin_production
+    - HOPIN_DATABASE_PASSWORD
+
+# ── kamal-proxy (replaces Nginx for most setups) ──────────────────────────────
+# Kamal 2 ships with kamal-proxy which:
+#   - handles TLS via Let's Encrypt automatically
+#   - load-balances across Puma workers
+#   - enables zero-downtime rolling deploys
+#   - health-checks the /up endpoint before routing traffic
+proxy:
+  ssl: true
+  host: <yourdomain.com>    # your domain — Let's Encrypt auto-provisions SSL
+  app_port: 3000
+
+# ── Health check ─────────────────────────────────────────────────────────────
+# Rails 8 ships GET /up → HealthController#show which returns 200 if the app
+# is healthy. Kamal uses this to gate traffic before cutting over.
+healthcheck:
+  path: /up
+  port: 3000
+  max_attempts: 7
+  interval: 5
+
+# ── Persistent volumes ────────────────────────────────────────────────────────
+# Active Storage uploads and SQLite (if ever used) need a persistent volume
+# that survives container restarts and deploys.
+volumes:
+  - hopin_storage:/rails/storage
+
+# ── Asset bridge ──────────────────────────────────────────────────────────────
+# Keeps the previous deploy's compiled assets alive during rolling deploys
+# so in-flight requests don't get 404s for CSS/JS files.
+asset_path: /rails/public/assets
+
+# ── Builder ───────────────────────────────────────────────────────────────────
+builder:
+  # Build on your local machine and push to registry.
+  # Switch to remote: true to build on the server instead (good for ARM servers).
+  multiarch: false     # set true if deploying to ARM from an x86 machine
+
+# ── Accessories ───────────────────────────────────────────────────────────────
+# Managed services Kamal starts alongside your app.
+# Kamal creates, starts, and stops these containers automatically.
+accessories:
+  db:
+    image: postgres:16-alpine
+    host: <your.server.ip>
+    port: "127.0.0.1:5432:5432"   # bind to localhost only — never expose DB publicly
+    env:
+      clear:
+        POSTGRES_DB: hopin_production
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+    volumes:
+      - hopin_postgres:/var/lib/postgresql/data
+    options:
+      restart: always
+      shm-size: 256m              # prevents shared memory errors under load
+
+  # Uncomment for Redis if you add Sidekiq or Action Cable with Redis adapter:
+  # redis:
+  #   image: redis:7-alpine
+  #   host: <your.server.ip>
+  #   port: "127.0.0.1:6379:6379"
+  #   volumes:
+  #     - hopin_redis:/data
+  #   options:
+  #     restart: always

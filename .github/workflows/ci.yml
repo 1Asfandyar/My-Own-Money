@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+# Cancel redundant runs on the same branch so new pushes don't queue behind old ones.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Security: static analysis ─────────────────────────────────────────────
+  scan_ruby:
+    name: Brakeman (static security scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true     # caches gems between runs via actions/cache
+
+      - name: Run Brakeman
+        run: bundle exec brakeman --no-pager --quiet
+
+  # ── Security: CVE scan ────────────────────────────────────────────────────
+  scan_deps:
+    name: bundler-audit (CVE check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Check for vulnerable gems
+        run: bundle exec bundle-audit check --update
+
+  # ── Linting ───────────────────────────────────────────────────────────────
+  lint:
+    name: RuboCop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Lint Ruby files
+        run: bundle exec rubocop --parallel --format github
+
+  # ── Test suite ────────────────────────────────────────────────────────────
+  test:
+    name: RSpec
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rupeerally
+          POSTGRES_PASSWORD: rupeerally
+          POSTGRES_DB: hopin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      # CI=true causes test.rb to eager_load, catching autoloading issues early.
+      CI: true
+      DATABASE_URL: postgres://rupeerally:rupeerally@localhost:5432/hopin_test
+      # Add RAILS_MASTER_KEY as a GitHub Actions secret:
+      #   Settings → Secrets → Actions → New repository secret
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Load database schema
+        run: bin/rails db:schema:load
+
+      - name: Run tests
+        run: bundle exec rspec --format progress --format RspecJunitFormatter --out tmp/rspec.xml
+        continue-on-error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rspec-results
+          path: tmp/rspec.xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  # ── Docker build verification ─────────────────────────────────────────────
+  # docker:
+  #   name: Docker build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Build Docker image (no push)
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         push: false
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #         build-args: |
+  #           RAILS_MASTER_KEY=${{ secrets.RAILS_MASTER_KEY }}

@@ -1,12 +1,12 @@
 class JwtBlacklist < ApplicationRecord
-  self.table_name = 'jwt_blacklists'
+  self.table_name = "jwt_blacklists"
 
   def self.jwt_revoked?(payload, _opts)
-    exists?(jti: payload['jti'])
+    exists?(jti: payload["jti"])
   end
 
   def self.revoke_jwt(payload, _opts)
-    create(jti: payload['jti'], exp: Time.zone.at(payload['exp']))
+    create(jti: payload["jti"], exp: Time.zone.at(payload["exp"]))
   end
 
   def self.ransackable_attributes(_auth_object = nil)

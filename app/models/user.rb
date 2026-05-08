@@ -7,14 +7,14 @@ class User < ApplicationRecord
          :jwt_authenticatable,
          jwt_revocation_strategy: JwtBlacklist
 
-  enum role: { user: 0, admin: 1 }
+  enum :role, { user: 0, admin: 1 }
 
   validates :email, presence: true, uniqueness: true
   validates :full_name, presence: true
   validates :mobile_number, presence: true, uniqueness: true
 
   def admin?
-    role == 'admin'
+    role == "admin"
   end
 
   def self.ransackable_attributes(_auth_object = nil)

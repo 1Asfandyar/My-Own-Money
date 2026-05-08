@@ -1,31 +1,43 @@
-# See https://docs.docker.com/engine/reference/builder/#dockerignore-file for more about ignoring files.
-
-# Ignore git directory.
+# Git history — never needed in images
 /.git/
+/.gitignore
+/.gitattributes
 
-# Ignore bundler config.
+# Bundler config
 /.bundle
 
-# Ignore all environment files (except templates).
+# Environment files (secrets must never land in an image)
 /.env*
 !/.env*.erb
 
-# Ignore all default key files.
+# Master key and credentials — injected at runtime via RAILS_MASTER_KEY env var
 /config/master.key
 /config/credentials/*.key
 
-# Ignore all logfiles and tempfiles.
+# Logs and tmp
 /log/*
 /tmp/*
 !/log/.keep
 !/tmp/.keep
-
-# Ignore pidfiles, but keep the directory.
-/tmp/pids/*
 !/tmp/pids/.keep
 
-# Ignore storage (uploaded files in development and any SQLite databases).
+# Storage (uploaded files — use object storage in production)
 /storage/*
 !/storage/.keep
 /tmp/storage/*
 !/tmp/storage/.keep
+
+# Test/spec files — not needed at runtime
+/spec/
+/test/
+
+# CI/CD config — not needed in the image
+/.github/
+/.rubocop*
+
+# Documentation
+/README.md
+/CHANGELOG.md
+
+# Node modules if ever added
+/node_modules/
