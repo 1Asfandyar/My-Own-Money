@@ -56,7 +56,7 @@ module Api::V0
     def normalize_errors(errors)
       if errors.is_a?(Hash) && errors.key?(:errors)
         inner = errors[:errors]
-        return inner.is_a?(Hash) ? { errors: [inner] } : errors
+        return inner.is_a?(Hash) ? { errors: [ inner ] } : errors
       end
 
       { errors: Array(errors) }

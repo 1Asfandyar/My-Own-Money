@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe "Api::V0::Accounts", type: :request do
@@ -38,7 +39,7 @@ RSpec.describe "Api::V0::Accounts", type: :request do
       it "returns only the current user's accounts" do
         data = JSON.parse(response.body)
         expect(data["accounts"].size).to eq(2)
-        expect(data["accounts"].map { |a| a["user_id"] }.uniq).to eq([user.id])
+        expect(data["accounts"].map { |a| a["user_id"] }.uniq).to eq([ user.id ])
       end
     end
 
