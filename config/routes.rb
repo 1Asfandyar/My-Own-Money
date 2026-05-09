@@ -10,7 +10,7 @@ Rails.application.routes.draw do
 
   get "up" => "health#show", as: :rails_health_check
 
-  draw :api_v1
+  draw :api_v0
 
   root to: redirect("/admin")
 end

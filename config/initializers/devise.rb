@@ -319,11 +319,11 @@ Devise.setup do |config|
     jwt.decoding_secret = jwt_secret
 
     jwt.dispatch_requests = [
-      [ "POST", %r{^/api/v1/auth/signup$} ],
-      [ "POST", %r{^/api/v1/auth/login$} ]
+      [ "POST", %r{^/api/v0/auth/signup$} ],
+      [ "POST", %r{^/api/v0/auth/login$} ]
     ]
     jwt.revocation_requests = [
-      [ "DELETE", %r{^/api/v1/auth/logout$} ]
+      [ "DELETE", %r{^/api/v0/auth/logout$} ]
     ]
 
     jwt.algorithm = "HS256"

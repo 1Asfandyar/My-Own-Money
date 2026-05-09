@@ -4,7 +4,7 @@
 #   let(:user) { create(:user) }
 #
 #   it "returns profile" do
-#     get "/api/v1/me", headers: auth_headers(user)
+#     get "/api/v0/me", headers: auth_headers(user)
 #     expect(response).to have_http_status(:ok)
 #   end
 

@@ -29,7 +29,7 @@ module Rack
     # Limit authentication attempts per IP to prevent brute-force.
     # 5 attempts / 1 minute is strict but necessary for auth endpoints.
     throttle("api/auth", limit: 5, period: 1.minute) do |req|
-      req.ip if req.path.start_with?("/api/v1/auth") && req.post?
+      req.ip if req.path.start_with?("/api/v0/auth") && req.post?
     end
 
     # Throttle admin login attempts separately (lower limit, shorter window).

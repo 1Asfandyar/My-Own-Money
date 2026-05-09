@@ -63,4 +63,5 @@ end
 group :test do
   gem "simplecov", require: false         # code coverage
   gem "shoulda-matchers"                  # model & controller one-liner matchers
+  gem "json_matchers"                     # match_json_schema matcher for request specs
 end
