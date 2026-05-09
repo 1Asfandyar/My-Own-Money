@@ -1,3 +1,13 @@
+# == Schema Information
+#
+# Table name: jwt_blacklists
+#
+#  id         :bigint           not null, primary key
+#  exp        :datetime
+#  jti        :string
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#
 class JwtBlacklist < ApplicationRecord
   self.table_name = "jwt_blacklists"
 

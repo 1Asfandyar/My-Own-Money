@@ -72,24 +72,24 @@ has_many :transactions
 ---
 
 ### accounts
-| Column          | Type           | Null  | Notes                     |
-|-----------------|----------------|-------|---------------------------|
-| id              | bigint         | false | PK                        |
-| user_id         | bigint         | false | FK → users                |
-| currency_id     | bigint         | false | FK → currencies           |
-| name            | string         | false |                           |
-| account_type    | string         | false | cash / bank / wallet      |
-| initial_balance | decimal(15,2)  | false | default: 0                |
-| current_balance | decimal(15,2)  | false | default: 0                |
-| is_archived     | boolean        | false | default: false            |
-| created_at      | datetime       | false |                           |
-| updated_at      | datetime       | false |                           |
+| Column               | Type     | Null  | Notes                     |
+|----------------------|----------|-------|---------------------------|
+| id                   | bigint   | false | PK                        |
+| user_id              | bigint   | false | FK → users                |
+| currency_id          | bigint   | false | FK → currencies           |
+| name                 | string   | false |                           |
+| account_type         | string   | false | cash / bank / wallet      |
+| initial_balance_cents| integer  | false | default: 0, stored in cents|
+| current_balance_cents| integer  | false | default: 0, stored in cents|
+| is_archived          | boolean  | false | default: false            |
+| created_at           | datetime | false |                           |
+| updated_at           | datetime | false |                           |
 
 ```ruby
-validates :name,            presence: true
-validates :account_type,    presence: true
-validates :initial_balance, numericality: true
-validates :current_balance, numericality: true
+validates :name,                 presence: true
+validates :account_type,         presence: true
+validates :initial_balance_cents, numericality: { only_integer: true }
+validates :current_balance_cents, numericality: { only_integer: true }
 
 belongs_to :user
 belongs_to :currency
@@ -105,8 +105,6 @@ has_many   :transactions
 | user_id       | bigint   | false | FK → users           |
 | name          | string   | false |                      |
 | category_type | string   | false | expense / income     |
-| color         | string   | true  | optional             |
-| icon          | string   | true  | optional             |
 | created_at    | datetime | false |                      |
 | updated_at    | datetime | false |                      |
 
@@ -172,7 +170,7 @@ belongs_to :user
 | group_id            | bigint        | true  | FK, shared expenses only     |
 | transaction_type    | integer       | false | enum                         |
 | visibility_type     | integer       | false | enum                         |
-| amount              | decimal(15,2) | false | positive                     |
+| amount_cents        | integer       | false | positive, stored in cents    |
 | title               | string        | false |                              |
 | note                | text          | true  |                              |
 | transaction_date    | datetime      | false |                              |
@@ -181,7 +179,7 @@ belongs_to :user
 | updated_at          | datetime      | false |                              |
 
 ```ruby
-validates :amount,           presence: true, numericality: { greater_than: 0 }
+validates :amount_cents,     presence: true, numericality: { only_integer: true, greater_than: 0 }
 validates :title,            presence: true
 validates :transaction_type, presence: true
 validates :visibility_type,  presence: true
@@ -227,12 +225,12 @@ add_index :transactions, :transaction_type
 | user_id          | bigint         | false | FK → users                         |
 | split_method     | integer        | false | enum                               |
 | allocation_value | decimal(15,4)  | true  | percentage % or shares count       |
-| owed_amount      | decimal(15,2)  | false | final calculated amount            |
+| owed_amount_cents| integer        | false | final calculated amount in cents   |
 | created_at       | datetime       | false |                                    |
 | updated_at       | datetime       | false |                                    |
 
 ```ruby
-validates :owed_amount,  presence: true, numericality: { greater_than_or_equal_to: 0 }
+validates :owed_amount_cents, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 validates :split_method, presence: true
 
 validate :allocation_value_required
@@ -260,14 +258,14 @@ add_index :transaction_splits, :user_id
 | id           | bigint        | false | PK                 |
 | from_user_id | bigint        | false | FK → users (owes)  |
 | to_user_id   | bigint        | false | FK → users (owed)  |
-| amount       | decimal(15,2) | false | current net debt   |
+| amount_cents | integer       | false | current net debt in cents |
 | created_at   | datetime      | false |                    |
 | updated_at   | datetime      | false |                    |
 
 ```ruby
 add_index :debts, [:from_user_id, :to_user_id], unique: true
 
-validates :amount, numericality: { greater_than: 0 }
+validates :amount_cents, numericality: { only_integer: true, greater_than: 0 }
 validate  :users_must_differ
 
 # users_must_differ

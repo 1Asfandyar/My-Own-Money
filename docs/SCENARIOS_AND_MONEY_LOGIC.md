@@ -2,8 +2,8 @@
 
 ## Core Rules
 
-- `transactions.amount` = full amount paid
-- `transaction_splits.owed_amount` = each user's share (used for expense reports)
+- `transactions.amount_cents` = full amount paid (in cents)
+- `transaction_splits.owed_amount_cents` = each user's share (in cents, used for expense reports)
 - `debts` = net current balance between two users (pre-calculated, not derived)
 - Only one debt row per user pair — always net the balance before saving
 
@@ -79,7 +79,7 @@ Ahmed's own share (1000) is already his — no self-debt.
 ```
 
 **Algorithm:**
-1. For each split where `user != payer`: `payer is owed split.owed_amount by that user`
+1. For each split where `user != payer`: `payer is owed split.owed_amount_cents by that user`
 2. Net the new amount against any existing debt row between that pair
 3. If net = 0 → delete the debt row
 4. If direction flips → swap `from_user_id` / `to_user_id` and save positive amount
@@ -126,7 +126,7 @@ Never overwrite debts directly. Reverse then reapply.
 
 ## Reporting Rules
 
-For expense reports, **always use `transaction_splits.owed_amount`**, not `transactions.amount`.
+For expense reports, **always use `transaction_splits.owed_amount_cents`**, not `transactions.amount_cents`.
 
 ```
 Ahmed pays 3000 dinner (shared, equal 3-way)
@@ -145,7 +145,7 @@ Query pattern:
 TransactionSplit
   .joins(:transaction)
   .where(user_id: user.id, transactions: { transaction_type: :expense })
-  .sum(:owed_amount)
+  .sum(:owed_amount_cents)
 ```
 
 ---
