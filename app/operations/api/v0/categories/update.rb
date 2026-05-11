@@ -4,8 +4,8 @@ module Api::V0::Categories
 
     class Contract < Api::V0::ApplicationContract
       params do
+        required(:id).filled(:integer)
         optional(:name).maybe(:string)
-        optional(:category_type).maybe(:string)
       end
 
       rule(:category_type) do
@@ -15,15 +15,13 @@ module Api::V0::Categories
     end
 
     def call(params, current_user:)
+      @params       = params
       @current_user = current_user
-      @id           = (params[:id] || params["id"]).to_i
-      validated     = yield validate_contract(category_params(params))
-      @attributes   = validated.compact
 
-      @category = Category.find_by(id: @id)
+      @category = current_user.categories.find_by(id: params[:id])
       return Failure(:not_found) unless category
 
-      yield authorize
+      yield authorize?
       yield persist
 
       Success(
@@ -34,18 +32,18 @@ module Api::V0::Categories
 
     private
 
-    attr_reader :current_user, :attributes, :category
+    attr_reader :params, :current_user, :category
 
-    def category_params(params)
-      params.fetch(:category, params.fetch("category", {}))
-    end
-
-    def authorize
+    def authorize?
       CategoryPolicy.new(current_user, category).update? ? Success() : Failure(:forbidden)
     end
 
     def persist
-      category.update(attributes) ? Success(category) : Failure(errors: category.errors.to_hash)
+      category.update(category_params) ? Success(category) : Failure(errors: category.errors.to_hash)
+    end
+
+    def category_params
+      params.slice(:name).compact
     end
   end
 end

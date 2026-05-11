@@ -9,13 +9,12 @@ module Api::V0::Categories
     end
 
     def call(params, current_user:)
-      params         = yield validate_contract(params.slice(:id))
-      @current_user  = current_user
-      @category      = Category.find_by(id: params[:id])
+      @current_user = current_user
+      @category     = current_user.categories.find_by(id: params[:id])
 
       return Failure(:not_found) unless category
 
-      yield authorize
+      yield authorize?
 
       Success(
         success: true,
@@ -27,7 +26,7 @@ module Api::V0::Categories
 
     attr_reader :current_user, :category
 
-    def authorize
+    def authorize?
       CategoryPolicy.new(current_user, category).show? ? Success() : Failure(:forbidden)
     end
   end

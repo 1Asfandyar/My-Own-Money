@@ -4,12 +4,9 @@ module Api::V0::Categories
 
     def call(params, current_user:)
       @current_user = current_user
-      id            = (params[:id] || params["id"]).to_i
-      @category     = Category.find_by(id: id)
+      @category     = current_user.categories.find_by(id: params[:id])
 
       return Failure(:not_found) unless category
-
-      yield authorize
 
       category.destroy
 
@@ -19,9 +16,5 @@ module Api::V0::Categories
     private
 
     attr_reader :current_user, :category
-
-    def authorize
-      CategoryPolicy.new(current_user, category).destroy? ? Success() : Failure(:forbidden)
-    end
   end
 end

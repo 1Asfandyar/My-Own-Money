@@ -2,8 +2,6 @@ module Api::V0::Categories
   class Create
     include Api::V0::ApplicationOperation
 
-    VALID_TYPES = %w[expense income].freeze
-
     class Contract < Api::V0::ApplicationContract
       params do
         required(:name).filled(:string)
@@ -16,11 +14,10 @@ module Api::V0::Categories
     end
 
     def call(params, current_user:)
+      @params       = params
       @current_user = current_user
-      validated     = yield validate_contract(category_params(params))
-      @attributes   = validated
 
-      yield authorize
+      yield authorize?
       yield persist
 
       Success(
@@ -31,19 +28,19 @@ module Api::V0::Categories
 
     private
 
-    attr_reader :current_user, :attributes, :category
+    attr_reader :current_user, :params, :category
 
-    def category_params(params)
-      params.fetch(:category, params.fetch("category", {}))
-    end
-
-    def authorize
+    def authorize?
       CategoryPolicy.new(current_user, Category.new).create? ? Success() : Failure(:forbidden)
     end
 
     def persist
-      @category = Category.new(attributes.merge(user: current_user))
+      @category = Category.new(category_params)
       category.save ? Success(category) : Failure(errors: category.errors.to_hash)
+    end
+
+    def category_params
+      params.slice(:name, :category_type).merge(user: current_user)
     end
   end
 end

@@ -5,7 +5,7 @@ module Api::V0::Categories
     def call(_params = {}, current_user:)
       @current_user = current_user
 
-      yield authorize
+      yield authorize?
 
       Success(
         success: true,
@@ -17,12 +17,12 @@ module Api::V0::Categories
 
     attr_reader :current_user
 
-    def authorize
+    def authorize?
       CategoryPolicy.new(current_user, Category).index? ? Success() : Failure(:forbidden)
     end
 
     def categories
-      Category.where(user_id: current_user.id).order(created_at: :desc)
+      current_user.categories.order(created_at: :desc)
     end
   end
 end
