@@ -13,7 +13,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
     let(:category_type)   { "expense" }
 
     let(:request_params) do
-      { category: { name: name, category_type: category_type } }
+      { name: name, category_type: category_type }
     end
 
     before do
@@ -74,7 +74,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
 
     context "when category_type is missing" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params)  { { category: { name: name } } }
+      let(:request_params)  { { name: name } }
 
       it "returns 422 and matches error schema" do
         expect(response).to have_http_status(:unprocessable_entity)

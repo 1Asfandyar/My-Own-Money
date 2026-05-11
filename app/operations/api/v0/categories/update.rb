@@ -6,6 +6,7 @@ module Api::V0::Categories
       params do
         required(:id).filled(:integer)
         optional(:name).maybe(:string)
+        optional(:category_type).maybe(:string)
       end
 
       rule(:category_type) do
@@ -43,7 +44,7 @@ module Api::V0::Categories
     end
 
     def category_params
-      params.slice(:name).compact
+      params.slice(:name, :category_type).compact
     end
   end
 end

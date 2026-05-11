@@ -37,6 +37,7 @@ class User < ApplicationRecord
   validates :mobile_number, presence: true, uniqueness: true
 
   has_many :accounts
+  has_many :categories
   has_many :transactions
   has_many :transaction_splits
   has_many :groups_users

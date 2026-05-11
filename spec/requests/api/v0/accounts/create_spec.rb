@@ -14,7 +14,7 @@ RSpec.describe "Api::V0::Accounts", type: :request do
     let(:currency_id)     { currency.id }
 
     let(:request_params) do
-      { account: { name: name, currency_id: currency_id } }
+      { name: name, currency_id: currency_id }
     end
 
     before do
@@ -38,7 +38,7 @@ RSpec.describe "Api::V0::Accounts", type: :request do
     context "when authenticated with optional balance params" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
-        { account: { name: name, currency_id: currency_id, initial_balance_cents: 5000, current_balance_cents: 5000 } }
+        { name: name, currency_id: currency_id, initial_balance_cents: 5000, current_balance_cents: 5000 }
       end
 
       it "returns 201 and persists balance values" do

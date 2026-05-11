@@ -41,8 +41,8 @@ RSpec.describe "Api::V0::Accounts", type: :request do
       let(:other_user)      { create(:user) }
       let(:request_headers) { headers.merge(auth_headers(other_user)) }
 
-      it "returns 403 and matches error schema" do
-        expect(response).to have_http_status(:forbidden)
+      it "returns 404 and matches error schema" do
+        expect(response).to have_http_status(:not_found)
         expect(response).to match_json_schema("error_response")
       end
     end

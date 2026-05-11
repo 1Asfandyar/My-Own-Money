@@ -10,7 +10,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
   let(:new_name)        { "New Name" }
 
   let(:request_params) do
-    { category: { name: new_name } }
+    { name: new_name }
   end
 
   describe "PATCH /api/v0/categories/:id" do
@@ -36,7 +36,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
 
     context "when updating category_type" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params)  { { category: { category_type: "income" } } }
+      let(:request_params)  { { category_type: "income" } }
 
       it "returns 200 and updates the type" do
         expect(response).to have_http_status(:ok)
@@ -56,8 +56,8 @@ RSpec.describe "Api::V0::Categories", type: :request do
       let(:other_user)      { create(:user) }
       let(:request_headers) { headers.merge(auth_headers(other_user)) }
 
-      it "returns 403 and matches error schema" do
-        expect(response).to have_http_status(:forbidden)
+      it "returns 404 and matches error schema" do
+        expect(response).to have_http_status(:not_found)
         expect(response).to match_json_schema("error_response")
       end
     end
@@ -74,7 +74,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
 
     context "when category_type is invalid" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params)  { { category: { category_type: "savings" } } }
+      let(:request_params)  { { category_type: "savings" } }
 
       it "returns 422 and matches error schema" do
         expect(response).to have_http_status(:unprocessable_entity)
