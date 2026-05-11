@@ -22,7 +22,7 @@ module Api::V0::Accounts
     end
 
     def accounts
-      Account.where(user_id: current_user.id).order(created_at: :desc)
+      current_user.accounts.order(created_at: :desc)
     end
   end
 end

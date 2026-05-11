@@ -9,13 +9,12 @@ module Api::V0::Accounts
     end
 
     def call(params, current_user:)
-      params       = yield validate_contract(params.slice(:id))
       @current_user = current_user
-      @account     = Account.find_by(id: params[:id])
+      @account      = current_user.accounts.find_by(id: params[:id])
 
       return Failure(:not_found) unless account
 
-      yield authorize
+      yield authorize?
 
       Success(
         success: true,
@@ -27,7 +26,7 @@ module Api::V0::Accounts
 
     attr_reader :current_user, :account
 
-    def authorize
+    def authorize?
       AccountPolicy.new(current_user, account).show? ? Success() : Failure(:forbidden)
     end
   end

@@ -4,8 +4,7 @@ module Api::V0::Accounts
 
     def call(params, current_user:)
       @current_user = current_user
-      id           = (params[:id] || params["id"]).to_i
-      @account     = Account.find_by(id: id)
+      @account      = current_user.accounts.find_by(id: params[:id])
 
       return Failure(:not_found) unless account
 

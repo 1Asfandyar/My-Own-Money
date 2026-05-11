@@ -4,6 +4,7 @@ module Api::V0::Accounts
 
     class Contract < Api::V0::ApplicationContract
       params do
+        required(:id).filled(:integer)
         optional(:name).maybe(:string)
         optional(:current_balance_cents).maybe(:integer)
         optional(:initial_balance_cents).maybe(:integer)
@@ -12,15 +13,13 @@ module Api::V0::Accounts
     end
 
     def call(params, current_user:)
+      @params       = params
       @current_user = current_user
-      @id          = (params[:id] || params["id"]).to_i
-      validated    = yield validate_contract(account_params(params))
-      @attributes  = validated.compact
 
-      @account = Account.find_by(id: @id)
+      @account = current_user.accounts.find_by(id: params[:id])
       return Failure(:not_found) unless account
 
-      yield authorize
+      yield authorize?
       yield persist
 
       Success(
@@ -31,18 +30,18 @@ module Api::V0::Accounts
 
     private
 
-    attr_reader :current_user, :attributes, :account
+    attr_reader :params, :current_user, :account
 
-    def account_params(params)
-      params.fetch(:account, params.fetch("account", {}))
-    end
-
-    def authorize
+    def authorize?
       AccountPolicy.new(current_user, account).update? ? Success() : Failure(:forbidden)
     end
 
     def persist
-      account.update(attributes) ? Success(account) : Failure(errors: account.errors.to_hash)
+      account.update(account_params) ? Success(account) : Failure(errors: account.errors.to_hash)
+    end
+
+    def account_params
+      params.slice(:name, :current_balance_cents, :initial_balance_cents, :currency_id).compact
     end
   end
 end
