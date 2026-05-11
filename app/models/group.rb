@@ -21,7 +21,7 @@ class Group < ApplicationRecord
   validates :name, presence: true
 
   belongs_to :created_by, class_name: "User"
-  has_many :groups_users
+  has_many :groups_users, dependent: :destroy
   has_many :users, through: :groups_users
   has_many :transactions
 end

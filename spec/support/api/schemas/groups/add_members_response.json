@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "group"],
+  "properties": {
+    "success": { "type": "boolean", "enum": [true] },
+    "group": { "$ref": "#/definitions/group" }
+  },
+  "definitions": {
+    "group": {
+      "type": "object",
+      "required": ["id", "name", "created_by_id", "members", "created_at", "updated_at"],
+      "properties": {
+        "id":            { "type": "integer" },
+        "name":          { "type": "string" },
+        "description":   { "type": ["string", "null"] },
+        "created_by_id": { "type": "integer" },
+        "members": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/member" }
+        },
+        "created_at":    { "type": "string" },
+        "updated_at":    { "type": "string" }
+      }
+    },
+    "member": {
+      "type": "object",
+      "required": ["id", "full_name", "email"],
+      "properties": {
+        "id":        { "type": "integer" },
+        "full_name": { "type": "string" },
+        "email":     { "type": "string" }
+      }
+    }
+  }
+}

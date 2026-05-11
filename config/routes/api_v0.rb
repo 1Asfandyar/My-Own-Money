@@ -9,5 +9,13 @@ namespace :api do
 
     resources :accounts
     resources :categories
+
+    resources :groups do
+      member do
+        post   "members",          to: "groups#add_members"
+        delete "members/:user_id", to: "groups#remove_member"
+        delete "leave",            to: "groups#leave"
+      end
+    end
   end
 end
