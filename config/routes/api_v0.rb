@@ -10,6 +10,8 @@ namespace :api do
     resources :accounts
     resources :categories
 
+    resources :transactions
+
     resources :groups do
       member do
         post   "members",          to: "groups#add_members"
