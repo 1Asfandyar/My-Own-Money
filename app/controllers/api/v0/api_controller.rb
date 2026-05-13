@@ -10,12 +10,27 @@ module Api::V0
     rescue_from Pundit::NotAuthorizedError, with: :forbidden_response
     rescue_from StandardError, with: :handle_standard_error
 
+    before_action :log_request_details
     before_action :require_current_user!
 
     private
 
     def authenticate_user!
       unauthorized_response unless current_user
+    end
+
+    def log_request_details
+      Rails.logger.info do
+        details = {
+          method: request.request_method,
+          path: request.fullpath,
+          format: request.format&.to_s,
+          content_type: request.content_type,
+          params: request.filtered_parameters.except("controller", "action")
+        }
+
+        "[Api::V0] #{self.class.name}##{action_name} #{details.inspect}"
+      end
     end
 
     def require_current_user!
