@@ -50,7 +50,7 @@ module Debts
       if net > 0
         existing.update!(amount_cents: net)
       elsif net == 0
-        existing.destroy!
+        existing.update!(amount_cents: 0)
       else
         # direction flips: debtor now owes payer
         existing.update!(from_user_id: debtor_id, to_user_id: payer_id, amount_cents: -net)

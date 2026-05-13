@@ -21,7 +21,7 @@
 #  fk_rails_...  (to_user_id => users.id)
 #
 class Debt < ApplicationRecord
-  validates :amount_cents, numericality: { only_integer: true, greater_than: 0 }
+  validates :amount_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate  :users_must_differ
 
   belongs_to :from_user, class_name: "User"

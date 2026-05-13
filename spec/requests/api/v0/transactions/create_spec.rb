@@ -390,9 +390,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         }
       end
 
-      it "deletes the debt row when the balance reaches zero" do
+      it "sets the debt row to zero when the balance reaches zero" do
         expect(response).to have_http_status(:created)
-        expect(Debt.find_by(from_user_id: user.id, to_user_id: user2.id)).to be_nil
+        debt = Debt.find_by(from_user_id: user.id, to_user_id: user2.id)
+        expect(debt).not_to be_nil
+        expect(debt.amount_cents).to eq(0)
         expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)).to be_nil
       end
     end
