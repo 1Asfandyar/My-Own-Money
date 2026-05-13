@@ -1,7 +1,5 @@
 module Api::V0
   class TransactionsController < ApiController
-    before_action :require_current_user!
-
     def index
       Api::V0::Transactions::Index.call(params.to_unsafe_h, current_user: current_user) do |result|
         result.success { |data| render json: data, status: :ok }
