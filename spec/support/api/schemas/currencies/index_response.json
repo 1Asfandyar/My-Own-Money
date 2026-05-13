@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": ["success", "currencies"],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "currencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "code", "name", "symbol", "created_at", "updated_at"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
