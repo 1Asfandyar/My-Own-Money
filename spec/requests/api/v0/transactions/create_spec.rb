@@ -143,6 +143,16 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    context "when category_id references a default category assigned to the current user" do
+      let(:category)        { user.categories.find_by!(name: "Groceries") }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns 201 and uses the category" do
+        expect(response).to have_http_status(:created)
+        expect(Transaction.find_by(title: title, user_id: user.id)&.category_id).to eq(category.id)
+      end
+    end
+
     context "when creating a transfer transaction" do
       let(:to_account)      { create(:account, user: user, currency: currency) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
