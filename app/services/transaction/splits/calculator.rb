@@ -19,6 +19,8 @@ module Transaction::Splits
       send(strategy, amount_cents: amount_cents, user_ids: user_ids, **options)
     end
 
+    private
+
     def self.calculate_equal(amount_cents:, user_ids:, **)
       count     = user_ids.size
       base      = amount_cents / count
@@ -33,6 +35,5 @@ module Transaction::Splits
         }
       end
     end
-    private_class_method :calculate_equal
   end
 end
