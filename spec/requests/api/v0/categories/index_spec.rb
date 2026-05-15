@@ -21,9 +21,10 @@ RSpec.describe "Api::V0::Categories", type: :request do
         expect(response).to match_json_schema("categories/index_response")
       end
 
-      it "returns an empty list when the user has no categories" do
+      it "returns the user's predefined categories" do
         data = JSON.parse(response.body)
-        expect(data["categories"]).to eq([])
+        expect(data["categories"].size).to eq(Categories::Defaults.all.size)
+        expect(data["categories"].map { |category| category["user_id"] }.uniq).to eq([ user.id ])
       end
     end
 
@@ -37,7 +38,8 @@ RSpec.describe "Api::V0::Categories", type: :request do
 
       it "returns only the current user's categories" do
         data = JSON.parse(response.body)
-        expect(data["categories"].size).to eq(2)
+        expect(data["categories"].size).to eq(Categories::Defaults.all.size + 2)
+        expect(data["categories"].map { |c| c["id"] }).to include(*own_categories.map(&:id))
         expect(data["categories"].map { |c| c["user_id"] }.uniq).to eq([ user.id ])
       end
     end

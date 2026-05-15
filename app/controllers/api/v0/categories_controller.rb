@@ -8,7 +8,7 @@ module Api::V0
 
     api :GET, "/v0/categories", "List all categories for the current user"
     description <<~DESC
-      Returns all categories belonging to the authenticated user, ordered by creation date descending.
+      Returns all categories belonging to the authenticated user. New users receive predefined categories automatically.
 
       **TypeScript Types**
 
@@ -24,6 +24,8 @@ module Api::V0
       type Category = {
         id: number;
         name: string;
+        icon: string | null;
+        color: string | null;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -38,6 +40,8 @@ module Api::V0
       param :categories, Array, desc: "List of categories" do
         param :id, Integer, desc: "Category ID"
         param :name, String, desc: "Category name"
+        param :icon, String, desc: "Optional Material icon name"
+        param :color, String, desc: "Optional hex color"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -71,6 +75,8 @@ module Api::V0
       type Category = {
         id: number;
         name: string;
+        icon: string | null;
+        color: string | null;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -87,6 +93,8 @@ module Api::V0
       param :category, Hash, desc: "Category data" do
         param :id, Integer, desc: "Category ID"
         param :name, String, desc: "Category name"
+        param :icon, String, desc: "Optional Material icon name"
+        param :color, String, desc: "Optional hex color"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -113,6 +121,8 @@ module Api::V0
       type Body = {
         name: string;
         category_type: 'expense' | 'income';
+        icon?: string | null;
+        color?: string | null;
       };
 
       // Output
@@ -124,6 +134,8 @@ module Api::V0
       type Category = {
         id: number;
         name: string;
+        icon: string | null;
+        color: string | null;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -133,6 +145,8 @@ module Api::V0
     DESC
     param :name, String, required: true, description: "Category name"
     param :category_type, String, required: true, description: "Category type: 'expense' or 'income'"
+    param :icon, String, required: false, description: "Optional Material icon name"
+    param :color, String, required: false, description: "Optional hex color"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 422, desc: "Validation errors"
@@ -141,6 +155,8 @@ module Api::V0
       param :category, Hash, desc: "Created category data" do
         param :id, Integer, desc: "Category ID"
         param :name, String, desc: "Category name"
+        param :icon, String, desc: "Optional Material icon name"
+        param :color, String, desc: "Optional hex color"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -166,6 +182,9 @@ module Api::V0
       type Params = { id: number };
       type Body = {
         name?: string;
+        category_type?: 'expense' | 'income';
+        icon?: string | null;
+        color?: string | null;
       };
 
       // Output
@@ -177,6 +196,8 @@ module Api::V0
       type Category = {
         id: number;
         name: string;
+        icon: string | null;
+        color: string | null;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -186,6 +207,9 @@ module Api::V0
     DESC
     param :id, Integer, required: true, description: "Category ID"
     param :name, String, required: false, description: "Category name"
+    param :category_type, String, required: false, description: "Category type: 'expense' or 'income'"
+    param :icon, String, required: false, description: "Optional Material icon name"
+    param :color, String, required: false, description: "Optional hex color"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 404, desc: "Category not found"
@@ -195,6 +219,8 @@ module Api::V0
       param :category, Hash, desc: "Updated category data" do
         param :id, Integer, desc: "Category ID"
         param :name, String, desc: "Category name"
+        param :icon, String, desc: "Optional Material icon name"
+        param :color, String, desc: "Optional hex color"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"

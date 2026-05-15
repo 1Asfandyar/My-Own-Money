@@ -22,7 +22,7 @@ module Api::V0::Categories
     end
 
     def categories
-      current_user.categories.order(created_at: :desc)
+      current_user.categories.order(:category_type, :name, :created_at)
     end
   end
 end

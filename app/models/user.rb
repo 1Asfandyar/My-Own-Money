@@ -7,6 +7,7 @@
 #  encrypted_password     :string           default(""), not null
 #  full_name              :string
 #  mobile_number          :string
+#  onboarding_completed   :boolean          default(FALSE), not null
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string
@@ -45,6 +46,8 @@ class User < ApplicationRecord
   has_many :debts_from, class_name: "Debt", foreign_key: :from_user_id
   has_many :debts_to,   class_name: "Debt", foreign_key: :to_user_id
 
+  after_create :assign_default_categories
+
   def admin?
     role == "admin"
   end
@@ -55,5 +58,11 @@ class User < ApplicationRecord
 
   def self.ransackable_associations(_auth_object = nil)
     []
+  end
+
+  private
+
+  def assign_default_categories
+    Categories::AssignDefaults.call(self)
   end
 end
