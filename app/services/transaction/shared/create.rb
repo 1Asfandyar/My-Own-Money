@@ -3,10 +3,14 @@
 class Transaction::Shared::Create < ApplicationService
   include Transaction::Helpers
 
-  def call(paid_by_user:, shared_by_users:, split_method:, title:, amount_cents:,
-           account:, category:, transaction_date:, note: nil, currency: nil)
+  # Equal split:  pass shared_by_users (array of User records)
+  # Exact split:  pass user_shares (array of { user_id:, share_amount_cents: })
+  def call(paid_by_user:, split_method:, title:, amount_cents:,
+           account:, category:, transaction_date:,
+           shared_by_users: nil, user_shares: nil, note: nil, currency: nil)
     @paid_by_user     = paid_by_user
     @shared_by_users  = shared_by_users
+    @user_shares      = user_shares
     @split_method     = split_method
     @title            = title
     @amount_cents     = amount_cents
@@ -21,8 +25,9 @@ class Transaction::Shared::Create < ApplicationService
 
   private
 
-  attr_reader :paid_by_user, :shared_by_users, :split_method, :title, :amount_cents,
-              :account, :category, :transaction_date, :note, :currency, :transaction
+  attr_reader :paid_by_user, :shared_by_users, :user_shares, :split_method, :title,
+              :amount_cents, :account, :category, :transaction_date, :note, :currency,
+              :transaction
 
   def persist
     debt_result = nil
@@ -60,11 +65,19 @@ class Transaction::Shared::Create < ApplicationService
   end
 
   def calculate_splits
-    Transaction::Splits::Calculator.calculate(
-      method:       split_method,
-      amount_cents: amount_cents,
-      user_ids:     shared_by_users.map(&:id)
-    )
+    if split_method.to_s == "equal"
+      Transaction::Splits::Calculator.calculate(
+        method:       split_method,
+        amount_cents: amount_cents,
+        user_ids:     shared_by_users.map(&:id)
+      )
+    else
+      Transaction::Splits::Calculator.calculate(
+        method:       split_method,
+        amount_cents: amount_cents,
+        user_shares:  user_shares
+      )
+    end
   end
 
   def create_splits!(splits)
@@ -79,10 +92,17 @@ class Transaction::Shared::Create < ApplicationService
   end
 
   def update_debts!(splits)
+    # Equal split: use pre-loaded User objects; other methods: load from DB.
+    user_map = if shared_by_users
+      shared_by_users.index_by(&:id)
+    else
+      User.where(id: splits.map { |s| s[:user_id] }).index_by(&:id)
+    end
+
     splits.each do |split|
       next if split[:user_id] == paid_by_user.id
 
-      debtor = shared_by_users.find { |u| u.id == split[:user_id] }
+      debtor = user_map[split[:user_id]]
       result = Debts::UpdateBalance.call(
         debtor_user:  debtor,
         payer_user:   paid_by_user,

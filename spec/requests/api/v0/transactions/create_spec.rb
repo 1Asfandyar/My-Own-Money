@@ -156,7 +156,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    # ── Shared expense: success paths ─────────────────────────────────────────
+    # ── Shared expense: equal split ───────────────────────────────────────────
 
     context "when creating a shared expense with equal split (payer in shared_by)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
@@ -428,6 +428,92 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    # ── Shared expense: exact split ───────────────────────────────────────────
+
+    context "when creating a shared expense with exact split (payer in user_shares)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Exact Dinner",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share_amount_cents: 1000 },
+            { user_id: user2.id, share_amount_cents: 800 },
+            { user_id: user3.id, share_amount_cents: 1200 }
+          ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("transactions/create_response")
+      end
+
+      it "persists the transaction as a shared expense" do
+        t = Transaction.find_by(title: "Exact Dinner")
+        expect(t).to be_present
+        expect(t.visibility_type).to eq("shared")
+        expect(t.transaction_type).to eq("expense")
+        expect(t.amount_cents).to eq(3000)
+      end
+
+      it "creates splits with the exact per-user amounts" do
+        t      = Transaction.find_by(title: "Exact Dinner")
+        splits = t.transaction_splits.index_by(&:user_id)
+        expect(splits[user.id].owed_amount_cents).to eq(1000)
+        expect(splits[user2.id].owed_amount_cents).to eq(800)
+        expect(splits[user3.id].owed_amount_cents).to eq(1200)
+        expect(splits.values.map(&:split_method).uniq).to eq([ "exact" ])
+      end
+
+      it "creates debts only for non-payer sharers" do
+        expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)&.amount_cents).to eq(800)
+        expect(Debt.find_by(from_user_id: user3.id, to_user_id: user.id)&.amount_cents).to eq(1200)
+        expect(Debt.find_by(from_user_id: user.id, to_user_id: user.id)).to be_nil
+      end
+
+      it "deducts the full amount from the payer's account" do
+        expect(account.reload.current_balance_cents).to eq(-3000)
+      end
+    end
+
+    context "when creating a shared expense with exact split (payer not in user_shares)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Exact — payer covers all",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user2.id, share_amount_cents: 1500 },
+            { user_id: user3.id, share_amount_cents: 1500 }
+          ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and creates splits only for the listed users" do
+        expect(response).to have_http_status(:created)
+        t = Transaction.find_by(title: "Exact — payer covers all")
+        expect(t.transaction_splits.pluck(:user_id)).to contain_exactly(user2.id, user3.id)
+      end
+
+      it "creates a debt for each sharer toward the payer" do
+        expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)&.amount_cents).to eq(1500)
+        expect(Debt.find_by(from_user_id: user3.id, to_user_id: user.id)&.amount_cents).to eq(1500)
+      end
+    end
+
     # ─────────────────────────────────────────────────────────────────────────
     # FAILURE PATHS
     # ─────────────────────────────────────────────────────────────────────────
@@ -602,7 +688,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    # ── Shared expense: failure paths ─────────────────────────────────────────
+    # ── Shared expense (equal): failure paths ─────────────────────────────────
 
     context "when shared_by is present but paid_by is missing" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
@@ -774,6 +860,98 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
       it "returns 404" do
         expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    # ── Shared expense (exact): failure paths ─────────────────────────────────
+
+    context "when user_shares is present but paid_by is missing" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Exact no payer",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          user_shares:      [ { user_id: user.id, share_amount_cents: 1500 },
+                              { user_id: user2.id, share_amount_cents: 1500 } ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when exact split share amounts do not sum to total" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Bad exact sum",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [ { user_id: user.id,  share_amount_cents: 500 },
+                              { user_id: user2.id, share_amount_cents: 500 } ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when exact split entries are missing share_amount_cents" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Missing amounts",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [ { user_id: user.id }, { user_id: user2.id } ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when user_shares contains an unknown user ID" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Exact ghost user",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [ { user_id: user.id,  share_amount_cents: 1500 },
+                              { user_id: 999_999,  share_amount_cents: 1500 } ],
+          split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
       end
     end
   end

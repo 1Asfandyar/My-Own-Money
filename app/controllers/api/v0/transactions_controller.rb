@@ -153,7 +153,9 @@ module Api::V0
 
       For **income** or **expense** transactions: provide `account_id` and `category_id`.
       For **transfer** transactions: provide `from_account_id` and `to_account_id` instead.
-      For **shared expense** transactions: also provide `shared_by`, `paid_by`, and `split_method`.
+      For **shared expense** transactions: also provide `paid_by`, `split_method`, and one of:
+        - `shared_by` (array of user IDs) when `split_method` is `"equal"` — amounts are divided evenly.
+        - `user_shares` (array of `{user_id, share_amount_cents}`) when `split_method` is `"exact"` — amounts are explicit.
         - `account_id` and `category_id` must belong to the `paid_by` user.
         - `transaction_date` defaults to today if omitted.
 
@@ -177,10 +179,15 @@ module Api::V0
         from_account_id?: number;
         to_account_id?: number;
 
-        // for shared expense (expense only)
-        paid_by?: number;                 // user ID of who paid; required when shared_by present
-        shared_by?: number[];             // user IDs sharing the expense (includes or excludes paid_by)
-        split_method?: "equal";           // currently only "equal" is supported
+        // for shared expense — equal split
+        paid_by?: number;                 // user ID of who paid; required for any shared expense
+        shared_by?: number[];             // user IDs sharing the expense (required for split_method "equal")
+        // for shared expense — exact split
+        user_shares?: Array<{             // required for split_method "exact"
+          user_id: number;
+          share_amount_cents: number;     // each user's explicit share; must sum to amount_cents
+        }>;
+        split_method?: "equal" | "exact"; // required when shared_by or user_shares present
       };
 
       // Output
@@ -201,8 +208,9 @@ module Api::V0
     param :from_account_id, Integer, required: false, desc: "Source account ID (required for transfer)"
     param :to_account_id, Integer, required: false, desc: "Destination account ID (required for transfer)"
     param :paid_by, Integer, required: false, desc: "User ID of who paid (required for shared expense)"
-    param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for shared expense)"
-    param :split_method, String, required: false, desc: "Split method: equal (required for shared expense)"
+    param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for split_method equal)"
+    param :user_shares, Array, required: false, desc: "Array of {user_id, share_amount_cents} objects (required for split_method exact)"
+    param :split_method, String, required: false, desc: "Split method: equal, exact (required when shared_by or user_shares present)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 404, desc: "Account, category, or currency not found"
