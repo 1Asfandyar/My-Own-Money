@@ -439,9 +439,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           transaction_type: "expense",
           paid_by:          user.id,
           user_shares:      [
-            { user_id: user.id,  share_amount_cents: 1000 },
-            { user_id: user2.id, share_amount_cents: 800 },
-            { user_id: user3.id, share_amount_cents: 1200 }
+            { user_id: user.id,  share: 1000 },
+            { user_id: user2.id, share: 800 },
+            { user_id: user3.id, share: 1200 }
           ],
           split_method:     "exact",
           account_id:       account.id,
@@ -492,8 +492,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           transaction_type: "expense",
           paid_by:          user.id,
           user_shares:      [
-            { user_id: user2.id, share_amount_cents: 1500 },
-            { user_id: user3.id, share_amount_cents: 1500 }
+            { user_id: user2.id, share: 1500 },
+            { user_id: user3.id, share: 1500 }
           ],
           split_method:     "exact",
           account_id:       account.id,
@@ -741,6 +741,28 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           transaction_type: "expense",
           paid_by:          user.id,
           shared_by:        [ user.id, user2.id ],
+          split_method:     "bogus_method",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when split_method is percentage but shared_by is provided instead of user_shares" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Wrong param combo",
+          amount_cents:     3000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          shared_by:        [ user.id, user2.id ],
           split_method:     "percentage",
           account_id:       account.id,
           category_id:      category.id,
@@ -872,8 +894,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           title:            "Exact no payer",
           amount_cents:     3000,
           transaction_type: "expense",
-          user_shares:      [ { user_id: user.id, share_amount_cents: 1500 },
-                              { user_id: user2.id, share_amount_cents: 1500 } ],
+          user_shares:      [ { user_id: user.id, share: 1500 },
+                              { user_id: user2.id, share: 1500 } ],
           split_method:     "exact",
           account_id:       account.id,
           category_id:      category.id,
@@ -895,8 +917,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           amount_cents:     3000,
           transaction_type: "expense",
           paid_by:          user.id,
-          user_shares:      [ { user_id: user.id,  share_amount_cents: 500 },
-                              { user_id: user2.id, share_amount_cents: 500 } ],
+          user_shares:      [ { user_id: user.id,  share: 500 },
+                              { user_id: user2.id, share: 500 } ],
           split_method:     "exact",
           account_id:       account.id,
           category_id:      category.id,
@@ -910,7 +932,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    context "when exact split entries are missing share_amount_cents" do
+    context "when exact split entries are missing share" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -940,9 +962,265 @@ RSpec.describe "Api::V0::Transactions", type: :request do
           amount_cents:     3000,
           transaction_type: "expense",
           paid_by:          user.id,
-          user_shares:      [ { user_id: user.id,  share_amount_cents: 1500 },
-                              { user_id: 999_999,  share_amount_cents: 1500 } ],
+          user_shares:      [ { user_id: user.id,  share: 1500 },
+                              { user_id: 999_999,  share: 1500 } ],
           split_method:     "exact",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    # ── Shared expense: percentage split ─────────────────────────────────────
+
+    context "when creating a shared expense with percentage split (payer in user_shares)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Percentage Dinner",
+          amount_cents:     10_000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 50 },
+            { user_id: user2.id, share: 30 },
+            { user_id: user3.id, share: 20 }
+          ],
+          split_method:     "percentage",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("transactions/create_response")
+      end
+
+      it "persists the transaction as a shared expense" do
+        t = Transaction.find_by(title: "Percentage Dinner")
+        expect(t).to be_present
+        expect(t.visibility_type).to eq("shared")
+        expect(t.amount_cents).to eq(10_000)
+      end
+
+      it "creates splits with the correct percentage-based amounts" do
+        t      = Transaction.find_by(title: "Percentage Dinner")
+        splits = t.transaction_splits.index_by(&:user_id)
+        expect(splits[user.id].owed_amount_cents).to eq(5000)
+        expect(splits[user2.id].owed_amount_cents).to eq(3000)
+        expect(splits[user3.id].owed_amount_cents).to eq(2000)
+        expect(splits.values.map(&:split_method).uniq).to eq([ "percentage" ])
+        expect(splits.values.map(&:owed_amount_cents).sum).to eq(10_000)
+      end
+
+      it "stores the percentage as allocation_value" do
+        t      = Transaction.find_by(title: "Percentage Dinner")
+        splits = t.transaction_splits.index_by(&:user_id)
+        expect(splits[user.id].allocation_value).to eq(50)
+        expect(splits[user2.id].allocation_value).to eq(30)
+        expect(splits[user3.id].allocation_value).to eq(20)
+      end
+
+      it "creates debts for the non-payer sharers" do
+        expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)&.amount_cents).to eq(3000)
+        expect(Debt.find_by(from_user_id: user3.id, to_user_id: user.id)&.amount_cents).to eq(2000)
+        expect(Debt.find_by(from_user_id: user.id, to_user_id: user.id)).to be_nil
+      end
+
+      it "deducts the full amount from the payer's account" do
+        expect(account.reload.current_balance_cents).to eq(-10_000)
+      end
+    end
+
+    context "when percentage split amount does not divide evenly" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Uneven percentage",
+          amount_cents:     100,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 34 },
+            { user_id: user2.id, share: 33 },
+            { user_id: user3.id, share: 33 }
+          ],
+          split_method:     "percentage",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and splits sum to the full amount" do
+        expect(response).to have_http_status(:created)
+        t = Transaction.find_by(title: "Uneven percentage")
+        expect(t.transaction_splits.sum(:owed_amount_cents)).to eq(100)
+      end
+    end
+
+    context "when percentage shares do not sum to 100" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Bad percentage",
+          amount_cents:     10_000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 60 },
+            { user_id: user2.id, share: 30 }
+          ],
+          split_method:     "percentage",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when a percentage entry has a non-positive share" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Zero percentage share",
+          amount_cents:     10_000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 100 },
+            { user_id: user2.id, share: 0 }
+          ],
+          split_method:     "percentage",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    # ── Shared expense: shares split ──────────────────────────────────────────
+
+    context "when creating a shared expense with shares split" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Shares Dinner",
+          amount_cents:     12_000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 1 },
+            { user_id: user2.id, share: 2 },
+            { user_id: user3.id, share: 3 }
+          ],
+          split_method:     "shares",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("transactions/create_response")
+      end
+
+      it "persists the transaction as a shared expense" do
+        t = Transaction.find_by(title: "Shares Dinner")
+        expect(t).to be_present
+        expect(t.visibility_type).to eq("shared")
+        expect(t.amount_cents).to eq(12_000)
+      end
+
+      it "creates splits proportional to the share counts" do
+        t      = Transaction.find_by(title: "Shares Dinner")
+        splits = t.transaction_splits.index_by(&:user_id)
+        # total shares = 6; user=1/6, user2=2/6, user3=3/6
+        expect(splits[user.id].owed_amount_cents).to eq(2000)
+        expect(splits[user2.id].owed_amount_cents).to eq(4000)
+        expect(splits[user3.id].owed_amount_cents).to eq(6000)
+        expect(splits.values.map(&:split_method).uniq).to eq([ "shares" ])
+        expect(splits.values.map(&:owed_amount_cents).sum).to eq(12_000)
+      end
+
+      it "stores the share count as allocation_value" do
+        t      = Transaction.find_by(title: "Shares Dinner")
+        splits = t.transaction_splits.index_by(&:user_id)
+        expect(splits[user.id].allocation_value).to eq(1)
+        expect(splits[user2.id].allocation_value).to eq(2)
+        expect(splits[user3.id].allocation_value).to eq(3)
+      end
+
+      it "creates debts for the non-payer sharers" do
+        expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)&.amount_cents).to eq(4000)
+        expect(Debt.find_by(from_user_id: user3.id, to_user_id: user.id)&.amount_cents).to eq(6000)
+        expect(Debt.find_by(from_user_id: user.id, to_user_id: user.id)).to be_nil
+      end
+
+      it "deducts the full amount from the payer's account" do
+        expect(account.reload.current_balance_cents).to eq(-12_000)
+      end
+    end
+
+    context "when shares split amount does not divide evenly" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Uneven shares",
+          amount_cents:     10,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 1 },
+            { user_id: user2.id, share: 1 },
+            { user_id: user3.id, share: 1 }
+          ],
+          split_method:     "shares",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and splits sum to the full amount" do
+        expect(response).to have_http_status(:created)
+        t = Transaction.find_by(title: "Uneven shares")
+        expect(t.transaction_splits.sum(:owed_amount_cents)).to eq(10)
+      end
+    end
+
+    context "when a shares entry has a non-positive share count" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Zero share count",
+          amount_cents:     12_000,
+          transaction_type: "expense",
+          paid_by:          user.id,
+          user_shares:      [
+            { user_id: user.id,  share: 3 },
+            { user_id: user2.id, share: 0 }
+          ],
+          split_method:     "shares",
           account_id:       account.id,
           category_id:      category.id,
           transaction_date: transaction_date

@@ -20,8 +20,8 @@ module Api::V0::Transactions
 
         # shared expense fields
         optional(:paid_by).maybe(:integer)
-        optional(:shared_by).maybe(:array)    # equal split: array of user IDs
-        optional(:user_shares).maybe(:array)  # exact split: array of { user_id:, share_amount_cents: }
+        optional(:shared_by).maybe(:array)   # equal split: array of user IDs
+        optional(:user_shares).maybe(:array) # non-equal splits: array of { user_id:, share: }
         optional(:split_method).maybe(:string)
       end
 
@@ -78,7 +78,7 @@ module Api::V0::Transactions
         key.failure("must be an array of integers") if value.any? { |v| !v.is_a?(Integer) }
       end
 
-      # --- shared expense: exact split (user_shares) ---
+      # --- shared expense: non-equal splits (user_shares) ---
 
       rule(:user_shares) do
         next if value.nil?
@@ -89,21 +89,45 @@ module Api::V0::Transactions
           next
         end
 
-        invalid = value.any? { |s| !s.is_a?(Hash) || !s[:user_id].is_a?(Integer) }
-        if invalid
+        if value.any? { |s| !s.is_a?(Hash) || !s[:user_id].is_a?(Integer) }
           key.failure("each entry must have an integer user_id")
           next
         end
 
-        next unless values[:split_method] == "exact"
+        method = values[:split_method]
 
-        if value.any? { |s| !s[:share_amount_cents].is_a?(Integer) || s[:share_amount_cents] < 0 }
-          key.failure("each entry must have a non-negative integer share_amount_cents")
-          next
+        case method
+        when "exact"
+          unless value.all? { |s| s[:share].is_a?(Integer) && s[:share] >= 0 }
+            key.failure("each entry must have a non-negative integer share for exact split")
+            next
+          end
+          total = value.sum { |s| s[:share] }
+          key.failure("shares must sum to #{values[:amount_cents]} for exact split") unless total == values[:amount_cents]
+        when "percentage"
+          unless value.all? { |s| s[:share].is_a?(Numeric) && s[:share] > 0 }
+            key.failure("each entry must have a positive numeric share for percentage split")
+            next
+          end
+          total = value.sum { |s| s[:share] }
+          key.failure("percentage shares must sum to 100") unless total == 100
+        when "shares"
+          unless value.all? { |s| s[:share].is_a?(Numeric) && s[:share] > 0 }
+            key.failure("each entry must have a positive numeric share count for shares split")
+          end
         end
+      end
 
-        total = value.sum { |s| s[:share_amount_cents] }
-        key.failure("share amounts must sum to #{values[:amount_cents]}") unless total == values[:amount_cents]
+      # Ensure shared_by and user_shares are not mixed for incompatible split methods.
+      rule(:split_method, :shared_by, :user_shares) do
+        method = values[:split_method]
+        next if method.nil?
+
+        if method != "equal" && values[:shared_by]&.any?
+          key(:shared_by).failure("must not be provided for #{method} split (use user_shares instead)")
+        elsif method == "equal" && values[:user_shares]&.any?
+          key(:user_shares).failure("must not be provided for equal split (use shared_by instead)")
+        end
       end
 
       # --- paid_by and split_method: required for any shared expense ---
@@ -216,7 +240,7 @@ module Api::V0::Transactions
       missing.empty? ? Success() : Failure(errors: { shared_by: [ "contains unknown user IDs: #{missing.join(', ')}" ] })
     end
 
-    # Exact split: validate all user_id values in user_shares exist.
+    # Non-equal split: validate all user_id values in user_shares exist.
     def find_user_shares_users
       user_ids  = params[:user_shares].map { |s| s[:user_id] }
       found_ids = User.where(id: user_ids).pluck(:id)

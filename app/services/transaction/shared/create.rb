@@ -3,8 +3,11 @@
 class Transaction::Shared::Create < ApplicationService
   include Transaction::Helpers
 
-  # Equal split:  pass shared_by_users (array of User records)
-  # Exact split:  pass user_shares (array of { user_id:, share_amount_cents: })
+  # Equal split:      pass shared_by_users (array of User records)
+  # All other splits: pass user_shares (array of { user_id:, share: })
+  #   exact:      share = amount in cents
+  #   percentage: share = percentage value (must sum to 100)
+  #   shares:     share = relative share count
   def call(paid_by_user:, split_method:, title:, amount_cents:,
            account:, category:, transaction_date:,
            shared_by_users: nil, user_shares: nil, note: nil, currency: nil)

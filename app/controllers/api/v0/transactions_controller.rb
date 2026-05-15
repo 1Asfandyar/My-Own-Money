@@ -182,12 +182,15 @@ module Api::V0
         // for shared expense — equal split
         paid_by?: number;                 // user ID of who paid; required for any shared expense
         shared_by?: number[];             // user IDs sharing the expense (required for split_method "equal")
-        // for shared expense — exact split
-        user_shares?: Array<{             // required for split_method "exact"
+        // for shared expense — non-equal splits
+        user_shares?: Array<{             // required for split_method "exact" | "percentage" | "shares"
           user_id: number;
-          share_amount_cents: number;     // each user's explicit share; must sum to amount_cents
+          share: number;                  // meaning depends on split_method:
+                                          //   exact:      amount in cents (must sum to amount_cents)
+                                          //   percentage: percentage value (must sum to 100)
+                                          //   shares:     relative share count
         }>;
-        split_method?: "equal" | "exact"; // required when shared_by or user_shares present
+        split_method?: "equal" | "exact" | "percentage" | "shares"; // required when shared_by or user_shares present
       };
 
       // Output
@@ -209,8 +212,8 @@ module Api::V0
     param :to_account_id, Integer, required: false, desc: "Destination account ID (required for transfer)"
     param :paid_by, Integer, required: false, desc: "User ID of who paid (required for shared expense)"
     param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for split_method equal)"
-    param :user_shares, Array, required: false, desc: "Array of {user_id, share_amount_cents} objects (required for split_method exact)"
-    param :split_method, String, required: false, desc: "Split method: equal, exact (required when shared_by or user_shares present)"
+    param :user_shares, Array, required: false, desc: "Array of {user_id, share} objects (required for split_method exact, percentage, or shares)"
+    param :split_method, String, required: false, desc: "Split method: equal, exact, percentage, shares (required when shared_by or user_shares present)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 404, desc: "Account, category, or currency not found"
