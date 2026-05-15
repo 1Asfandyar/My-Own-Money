@@ -10,7 +10,7 @@ module Categories
 
     def call
       Category.transaction do
-        Defaults.all.find_each { |attributes| upsert_category(attributes) }
+        Defaults.all.each { |attributes| upsert_category(attributes) } # rubocop:disable Rails/FindEach
       end
     end
 

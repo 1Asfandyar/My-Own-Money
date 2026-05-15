@@ -9,7 +9,7 @@ RSpec.describe "Api::V0::Users", type: :request do
 
   describe "PATCH /api/v0/me" do
     let(:endpoint)       { "/api/v0/me" }
-    let(:request_params) { { user: { onboarding_completed: true } } }
+    let(:request_params) { { onboarding_completed: true } }
 
     before do
       patch endpoint, params: request_params.to_json, headers: request_headers
@@ -38,7 +38,8 @@ RSpec.describe "Api::V0::Users", type: :request do
 
     context "when onboarding_completed is invalid" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params)  { { user: { onboarding_completed: "yes" } } }
+      # yes/no are valid somehow here
+      let(:request_params)  { { onboarding_completed: "so" } }
 
       it "returns 422 and matches error schema" do
         expect(response).to have_http_status(:unprocessable_entity)
