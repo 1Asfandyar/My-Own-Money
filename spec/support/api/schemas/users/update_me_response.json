@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "user"],
+  "properties": {
+    "success": { "type": "boolean", "enum": [true] },
+    "user": { "$ref": "#/definitions/user" }
+  },
+  "definitions": {
+    "user": {
+      "type": "object",
+      "required": ["id", "full_name", "mobile_number", "email", "role", "onboarding_completed", "created_at", "updated_at"],
+      "properties": {
+        "id":                   { "type": "integer" },
+        "full_name":            { "type": "string" },
+        "mobile_number":        { "type": "string" },
+        "email":                { "type": "string" },
+        "role":                 { "type": "string" },
+        "onboarding_completed": { "type": "boolean" },
+        "created_at":           { "type": "string" },
+        "updated_at":           { "type": "string" }
+      }
+    }
+  }
+}

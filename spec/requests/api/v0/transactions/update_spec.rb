@@ -166,6 +166,17 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    context "when category_id references a default category assigned to the current user" do
+      let(:default_category) { user.categories.find_by!(name: "Groceries") }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { category_id: default_category.id } }
+
+      it "returns 200 and updates the category" do
+        expect(response).to have_http_status(:ok)
+        expect(transaction.reload.category_id).to eq(default_category.id)
+      end
+    end
+
     context "when amount_cents is zero" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { amount_cents: 0 } }

@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "total_amount_cents", "total_absolute_amount_cents", "total_account_balance_cents", "total_spent_cents", "total_income_cents", "categories"],
+  "properties": {
+    "success": { "type": "boolean", "enum": [true] },
+    "total_amount_cents": { "type": "integer" },
+    "total_absolute_amount_cents": { "type": "integer" },
+    "total_account_balance_cents": { "type": "integer" },
+    "total_spent_cents": { "type": "integer" },
+    "total_income_cents": { "type": "integer" },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "amount_cents", "percentage", "transactions"],
+        "properties": {
+          "category": { "$ref": "#/definitions/category" },
+          "amount_cents": { "type": "integer" },
+          "percentage": { "type": "number" },
+          "transactions": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/transaction" }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "category": {
+      "type": "object",
+      "required": ["id", "name", "category_type", "user_id", "created_at", "updated_at"],
+      "properties": {
+        "id": { "type": "integer" },
+        "name": { "type": "string" },
+        "icon": { "type": ["string", "null"] },
+        "color": { "type": ["string", "null"] },
+        "category_type": { "type": "string" },
+        "user_id": { "type": "integer" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "currency_id", "user_id", "created_at", "updated_at"],
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "amount_cents": { "type": "integer" },
+        "transaction_type": { "type": "string" },
+        "visibility_type": { "type": "string" },
+        "transaction_date": { "type": "string" },
+        "note": { "type": ["string", "null"] },
+        "account_id": { "type": "integer" },
+        "transfer_account_id": { "type": ["integer", "null"] },
+        "category_id": { "type": ["integer", "null"] },
+        "currency_id": { "type": "integer" },
+        "user_id": { "type": "integer" },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      }
+    }
+  }
+}

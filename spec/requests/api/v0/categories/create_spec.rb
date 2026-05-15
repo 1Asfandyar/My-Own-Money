@@ -9,7 +9,7 @@ RSpec.describe "Api::V0::Categories", type: :request do
   describe "POST /api/v0/categories" do
     let(:endpoint)        { "/api/v0/categories" }
     let(:request_headers) { headers }
-    let(:name)            { "Groceries" }
+    let(:name)            { "Pet Supplies" }
     let(:category_type)   { "expense" }
 
     let(:request_params) do
@@ -32,6 +32,13 @@ RSpec.describe "Api::V0::Categories", type: :request do
       it "persists the category belonging to the current user" do
         expect(Category.find_by(name: name, user_id: user.id)).to be_present
       end
+
+      it "creates a custom category without requiring metadata" do
+        category = Category.find_by(name: name, user_id: user.id)
+
+        expect(category.icon).to be_nil
+        expect(category.color).to be_nil
+      end
     end
 
     context "when authenticated with income type" do
@@ -41,6 +48,33 @@ RSpec.describe "Api::V0::Categories", type: :request do
       it "returns 201 and persists income category" do
         expect(response).to have_http_status(:created)
         expect(Category.find_by(name: name, category_type: "income")).to be_present
+      end
+    end
+
+    context "when authenticated with custom icon and color" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        { name: name, category_type: category_type, icon: "local_cafe", color: "#FFA366" }
+      end
+
+      it "persists the provided metadata" do
+        expect(response).to have_http_status(:created)
+
+        category = Category.find_by(name: name, user_id: user.id)
+        expect(category.icon).to eq("local_cafe")
+        expect(category.color).to eq("#FFA366")
+      end
+    end
+
+    context "when authenticated with blank icon and color" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        { name: name, category_type: category_type, icon: "", color: "" }
+      end
+
+      it "returns 201 and treats metadata as optional" do
+        expect(response).to have_http_status(:created)
+        expect(Category.find_by(name: name, user_id: user.id)).to be_present
       end
     end
 

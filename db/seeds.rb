@@ -26,3 +26,8 @@ Rails.logger.debug "Admin user ready: #{admin.email}"
 Rails.logger.info "Seeding currencies..."
 require_relative 'seed/currency_seed'
 Rails.logger.info "Seeded currencies. Total count: #{Currency.count}"
+
+Rails.logger.info "Seeding categories..."
+require_relative "seed/category_seed"
+CategorySeed.seed!
+Rails.logger.info "Seeded categories. Total count: #{Category.count}"

@@ -28,6 +28,16 @@ RSpec.describe "Api::V0::Categories", type: :request do
       end
     end
 
+    context "when the category is one of the user's default categories" do
+      let(:category)        { user.categories.find_by!(name: "Groceries") }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns 200" do
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body).dig("category", "user_id")).to eq(user.id)
+      end
+    end
+
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do
