@@ -7,11 +7,18 @@ module Api::V0::Categories
         required(:id).filled(:integer)
         optional(:name).maybe(:string)
         optional(:category_type).maybe(:string)
+        optional(:icon).maybe(:string)
+        optional(:color).maybe(:string)
       end
 
       rule(:category_type) do
         next unless key? && value
         key.failure("must be expense or income") unless %w[expense income].include?(value)
+      end
+
+      rule(:color) do
+        next unless key? && value.is_a?(String) && value.present?
+        key.failure("must be a valid hex color") unless value.match?(Category::COLOR_FORMAT)
       end
     end
 
@@ -44,7 +51,10 @@ module Api::V0::Categories
     end
 
     def category_params
-      params.slice(:name, :category_type).compact
+      params.slice(:name, :category_type, :icon, :color).tap do |attributes|
+        attributes.delete(:name) if attributes[:name].nil?
+        attributes.delete(:category_type) if attributes[:category_type].nil?
+      end
     end
   end
 end
