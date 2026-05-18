@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+      - SECRET_KEY_BASE=change-this-secret-key-base
+      # - REDIS_URL=redis://redis:6379/1
+    links:
+      # - redis
+      - db
+    depends_on:
+      - db
+      # - redis
+    ports:
+      - 3000:3000
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - db_data:/var/lib/postgresql
+  # sidekiq:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   command: bundle exec sidekiq
+  #   environment:
+  #     - DB_NAME=postgres
+  #     - DB_USERNAME=postgres
+  #     - DB_PASSWORD=postgres
+  #     - DB_HOST=db
+  #     - DB_PORT=5432
+  #     - REDIS_URL=redis://redis:6379/1
+  #   links:
+  #     - redis
+  #     - db
+  #   depends_on:
+  #     - db
+  #     - redis
+
+  # redis:
+  #   image: redis:latest
+
+  # web:
+  #   build:
+  #     context: ./web
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 80:80
+
+volumes:
+  gem_cache:
+  db_data:
