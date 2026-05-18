@@ -1,33 +1,7 @@
-# Creates the single admin account used to access ActiveAdmin.
-admin_email = ENV.fetch('ADMIN_EMAIL', 'admin@example.com')
-admin_password = ENV['ADMIN_PASSWORD']
-
-if admin_password.blank?
-  raise 'Set ADMIN_PASSWORD before seeding production' if Rails.env.production?
-
-  admin_password = 'ChangeMe123!'
-  warn 'Using development admin password: ChangeMe123!'
-end
-
-admin = AdminUser.find_or_initialize_by(email: admin_email)
-
-if admin.new_record? || ENV['ADMIN_PASSWORD'].present?
-  admin.password = admin_password
-  admin.password_confirmation = admin_password
-end
-
-admin.save!
-
-extra_admins = AdminUser.where.not(id: admin.id)
-warn "There are #{extra_admins.count} extra admin accounts. Remove them manually." if extra_admins.exists?
-
-Rails.logger.debug "Admin user ready: #{admin.email}"
-
+require_relative 'seed/user_seed'
 Rails.logger.info "Seeding currencies..."
 require_relative 'seed/currency_seed'
 Rails.logger.info "Seeded currencies. Total count: #{Currency.count}"
-
 Rails.logger.info "Seeding categories..."
-require_relative "seed/category_seed"
-CategorySeed.seed!
-Rails.logger.info "Seeded categories. Total count: #{Category.count}"
+require_relative 'seed/category_seed'
+require_relative 'seed/account_seed'
