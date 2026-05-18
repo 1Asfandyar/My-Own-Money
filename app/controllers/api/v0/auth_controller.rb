@@ -25,6 +25,13 @@ module Api::V0
       end
     end
 
+    def google_login
+      Api::V0::Auth::GoogleLogin.call(params.to_unsafe_h) do |result|
+        result.success { |data| authenticated_response(data, :ok) }
+        result.failure { |errors| unprocessable_entity(errors) }
+      end
+    end
+
     private
 
     def authenticated_response(data, status)

@@ -35,7 +35,8 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: true
   validates :full_name, presence: true
-  validates :mobile_number, presence: true, uniqueness: true
+  validates :mobile_number, presence: true, unless: -> { provider.present? }
+  validates :mobile_number, uniqueness: true, allow_nil: true
 
   has_many :accounts
   has_many :categories
