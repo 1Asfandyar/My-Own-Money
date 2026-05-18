@@ -38,17 +38,7 @@ Rails.application.configure do
   config.cache_store = :memory_store, { size: 64.megabytes }
 
   # ── Active Job ──────────────────────────────────────────────────────────────
-  # Default :async runs jobs in-process (lost on restart).
-  # For production use Solid Queue (no Redis) or Sidekiq:
-  #
-  #   gem "solid_queue"
-  #   config.active_job.queue_adapter = :solid_queue
-  #
-  #   — OR —
-  #
-  #   gem "sidekiq"
-  #   config.active_job.queue_adapter = :sidekiq
-  #
+  config.active_job.queue_adapter = :solid_queue
   # config.active_job.queue_name_prefix = "mom_production"
 
   # ── Mailer ──────────────────────────────────────────────────────────────────

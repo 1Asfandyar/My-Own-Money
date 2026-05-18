@@ -29,6 +29,7 @@ Rails.application.configure do
   config.active_record.verbose_query_logs = true
 
   # ── ActiveJob ───────────────────────────────────────────────────────────────
+  config.active_job.queue_adapter = :solid_queue
   config.active_job.verbose_enqueue_logs = true
 
   # ── Deprecations ────────────────────────────────────────────────────────────
