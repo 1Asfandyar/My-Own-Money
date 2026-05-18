@@ -43,6 +43,9 @@ gem "redcarpet"               # markdown rendering for Apipie descriptions
 gem "kaminari"                # kept — ActiveAdmin depends on it internally
 gem "pagy"                    # fast pagination for API layer
 
+# ─── Background Jobs ──────────────────────────────────────────────────────────
+gem "solid_queue"
+
 # ─── Development + Test ───────────────────────────────────────────────────────
 group :development, :test do
   gem "debug", platforms: %i[mri windows jruby]  # replaces byebug (broken on Ruby 3.4)
