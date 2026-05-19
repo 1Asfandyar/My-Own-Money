@@ -26,6 +26,7 @@ module Api::V0
         name: string;
         icon: string | null;
         color: string | null;
+        balance_cents: number;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -42,6 +43,7 @@ module Api::V0
         param :name, String, desc: "Category name"
         param :icon, String, desc: "Optional Material icon name"
         param :color, String, desc: "Optional hex color"
+        param :balance_cents, Integer, desc: "Current balance in cents"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -77,6 +79,7 @@ module Api::V0
         name: string;
         icon: string | null;
         color: string | null;
+        balance_cents: number;
         category_type: 'expense' | 'income';
         user_id: number;
         created_at: string; // ISO 8601
@@ -95,6 +98,7 @@ module Api::V0
         param :name, String, desc: "Category name"
         param :icon, String, desc: "Optional Material icon name"
         param :color, String, desc: "Optional hex color"
+        param :balance_cents, Integer, desc: "Current balance in cents"
         param :category_type, String, desc: "Category type: 'expense' or 'income'"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -202,6 +206,7 @@ module Api::V0
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
+        balance_cents: number; // Current balance in cents
       };
       ```
     DESC
@@ -225,6 +230,7 @@ module Api::V0
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        param :balance_cents, Integer, desc: "Current balance in cents"
       end
     end
     def update
