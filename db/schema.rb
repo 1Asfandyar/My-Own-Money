@@ -41,6 +41,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_18_000000) do
   end
 
   create_table "categories", force: :cascade do |t|
+    t.integer "balance_cents", default: 0, null: false
     t.integer "category_type", null: false
     t.string "color"
     t.datetime "created_at", null: false

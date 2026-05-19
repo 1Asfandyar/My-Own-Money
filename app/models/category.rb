@@ -3,6 +3,7 @@
 # Table name: categories
 #
 #  id            :bigint           not null, primary key
+#  balance_cents :integer          default(0), not null
 #  category_type :integer          not null
 #  color         :string
 #  icon          :string
