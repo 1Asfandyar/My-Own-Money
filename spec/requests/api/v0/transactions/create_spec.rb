@@ -54,6 +54,10 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(t.visibility_type).to eq("personal")
         expect(t.transaction_type).to eq("expense")
       end
+
+      it "increments the category balance_cents by amount_cents" do
+        expect(category.reload.balance_cents).to eq(amount_cents)
+      end
     end
 
     context "when authenticated with a personal income" do
@@ -70,6 +74,10 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         t = Transaction.find_by(title: title, user_id: user.id)
         expect(t).to be_present
         expect(t.transaction_type).to eq("income")
+      end
+
+      it "increments the category balance_cents by amount_cents" do
+        expect(category.reload.balance_cents).to eq(amount_cents)
       end
     end
 
