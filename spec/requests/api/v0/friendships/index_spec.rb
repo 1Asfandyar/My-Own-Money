@@ -19,6 +19,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
   let!(:f_blocked_out) { create(:friendship, :blocked, sender: user, receiver: blocked_friend) }
   let!(:f_blocked_in)  { create(:friendship, :blocked, sender: blocked_sender, receiver: user) }
 
+  # Debt seeding — override `debt` in child contexts; nil means no debt (settled_up).
+  # let! forces evaluation before the inner before { get ... } block fires.
+  let(:debt)         { nil }
+  let!(:_setup_debt) { debt }
+
   describe "GET /api/v0/friendships" do
     let(:endpoint)        { "/api/v0/friendships" }
     let(:request_headers) { headers }
@@ -87,6 +92,47 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         ids = JSON.parse(response.body)["friendships"].map { |f| f["id"] }
         expect(ids).to include(f_blocked_in.id)
         expect(ids).not_to include(f_blocked_out.id, f_accepted.id)
+      end
+    end
+
+    context "when the accepted friend owes the current user" do
+      let(:debt)            { create(:debt, from_user: accepted_friend, to_user: user, amount_cents: 500) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns balance with type owes_you and correct amount" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("friendships/index_response")
+        balance = JSON.parse(response.body)["friendships"]
+                      .find { |f| f["id"] == f_accepted.id }["balance"]
+        expect(balance["type"]).to eq("owes_you")
+        expect(balance["amount_cents"]).to eq(500)
+      end
+    end
+
+    context "when the current user owes the accepted friend" do
+      let(:debt)            { create(:debt, from_user: user, to_user: accepted_friend, amount_cents: 330) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns balance with type you_owe and correct amount" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("friendships/index_response")
+        balance = JSON.parse(response.body)["friendships"]
+                      .find { |f| f["id"] == f_accepted.id }["balance"]
+        expect(balance["type"]).to eq("you_owe")
+        expect(balance["amount_cents"]).to eq(330)
+      end
+    end
+
+    context "when there is no debt with the accepted friend" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns balance with type settled_up and amount 0" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("friendships/index_response")
+        balance = JSON.parse(response.body)["friendships"]
+                      .find { |f| f["id"] == f_accepted.id }["balance"]
+        expect(balance["type"]).to eq("settled_up")
+        expect(balance["amount_cents"]).to eq(0)
       end
     end
 

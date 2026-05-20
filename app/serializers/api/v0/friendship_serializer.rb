@@ -6,5 +6,20 @@ module Api::V0
 
     association :user_a, blueprint: Api::V0::UserSerializer
     association :user_b, blueprint: Api::V0::UserSerializer
+
+    field :balance do |friendship, options|
+      current_user_id = options[:current_user_id]
+      debt_map        = options[:debt_map] || {}
+      friend_id       = friendship.user_a_id == current_user_id ? friendship.user_b_id : friendship.user_a_id
+      debt            = debt_map[friend_id]
+
+      if debt.nil?
+        { type: "settled_up", amount_cents: 0 }
+      elsif debt.from_user_id == current_user_id
+        { type: "you_owe", amount_cents: debt.amount_cents }
+      else
+        { type: "owes_you", amount_cents: debt.amount_cents }
+      end
+    end
   end
 end

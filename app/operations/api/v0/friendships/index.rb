@@ -23,9 +23,14 @@ module Api::V0::Friendships
       @params       = params
       @current_user = current_user
 
+      fs = friendships
       Success(
         success: true,
-        friendships: Api::V0::FriendshipSerializer.render_as_hash(friendships)
+        friendships: Api::V0::FriendshipSerializer.render_as_hash(
+          fs,
+          current_user_id: current_user.id,
+          debt_map: build_debt_map(fs)
+        )
       )
     end
 
@@ -41,6 +46,19 @@ module Api::V0::Friendships
       scope = apply_status_filter(scope)
       scope = apply_direction_filter(scope)
       scope
+    end
+
+    def build_debt_map(fs)
+      friend_ids = fs.flat_map { |f| [ f.user_a_id, f.user_b_id ] }.uniq - [ current_user.id ]
+      return {} if friend_ids.empty?
+
+      debts = Debt.where(from_user_id: current_user.id, to_user_id: friend_ids)
+                  .or(Debt.where(from_user_id: friend_ids, to_user_id: current_user.id))
+
+      debts.each_with_object({}) do |debt, map|
+        friend_id = debt.from_user_id == current_user.id ? debt.to_user_id : debt.from_user_id
+        map[friend_id] = debt
+      end
     end
 
     def apply_status_filter(scope)
