@@ -22,6 +22,6 @@ namespace :api do
       end
     end
 
-    resources :friendships, only: [ :index, :create, :update, :destroy ]
+    resources :friendships
   end
 end

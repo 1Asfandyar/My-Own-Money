@@ -75,6 +75,142 @@ module Api::V0
       end
     end
 
+    api :GET, "/v0/friendships/:id", "Friendship ledger — full financial overview between two users"
+    description <<~DESC
+      Returns a complete financial overview for a single friendship: the friend's profile,
+      the overall net balance, a per-group balance breakdown, and a chronological activity
+      feed of every shared transaction that involves both users.
+
+      All financial computation is done server-side. The frontend only needs to map `type`
+      strings to display labels.
+
+      **Balance types**
+
+      | type | Meaning |
+      |---|---|
+      | `owes_you` | The friend owes the current user |
+      | `you_owe` | The current user owes the friend |
+      | `settled_up` | No outstanding balance |
+
+      **Activity impact types**
+
+      | type | Meaning |
+      |---|---|
+      | `you_lent` | Current user paid; friend's share is what they owe |
+      | `you_borrowed` | Friend paid; current user's share is what they owe |
+      | `no_balance` | A third party paid; no bilateral debt between the two users |
+
+      **TypeScript Types**
+
+      ```typescript
+      // Input
+      type Params = { id: number };
+
+      // Output
+      type Response = {
+        success: boolean;
+        friendship: FriendshipLedger;
+      };
+
+      type FriendshipLedger = {
+        id: number;
+        status: "pending" | "accepted" | "blocked";
+        requested_by_id: number;
+        created_at: string; // ISO 8601
+        updated_at: string; // ISO 8601
+        friend: User;
+        balance_summary: Balance;
+        group_balances: GroupBalance[];
+        activity: ActivityItem[];
+      };
+
+      type User = {
+        id: number;
+        full_name: string;
+        email: string;
+      };
+
+      type Balance = {
+        type: "owes_you" | "you_owe" | "settled_up";
+        amount_cents: number;
+      };
+
+      type GroupBalance = {
+        group_id: number;
+        group_name: string;
+        balance: Balance;
+      };
+
+      type ActivityItem = {
+        transaction_id: number;
+        title: string;
+        amount_cents: number;
+        transaction_date: string; // ISO 8601
+        payer: User;
+        group: { id: number; name: string } | null;
+        balance_impact: {
+          type: "you_lent" | "you_borrowed" | "no_balance";
+          amount_cents: number;
+        };
+      };
+      ```
+    DESC
+    param :id, Integer, required: true, desc: "Friendship ID"
+    error code: 401, desc: "Unauthorized — missing or invalid JWT"
+    error code: 404, desc: "Friendship not found or does not involve the current user"
+    returns code: 200, desc: "Success" do
+      param :success, :bool, desc: "Operation status"
+      param :friendship, Hash, desc: "Full friendship ledger" do
+        param :id, Integer, desc: "Friendship ID"
+        param :status, String, desc: "Friendship status: pending, accepted, or blocked"
+        param :requested_by_id, Integer, desc: "ID of the user who sent the original request"
+        param :created_at, String, desc: "ISO 8601 creation timestamp"
+        param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        param :friend, Hash, desc: "The other user in the friendship" do
+          param :id, Integer, desc: "User ID"
+          param :full_name, String, desc: "Full name"
+          param :email, String, desc: "Email address"
+        end
+        param :balance_summary, Hash, desc: "Overall net balance between the two users" do
+          param :type, String, desc: "owes_you | you_owe | settled_up"
+          param :amount_cents, Integer, desc: "Net balance in cents (0 when settled_up)"
+        end
+        param :group_balances, Array, desc: "Per-group net balances (only groups with non-zero balance included)" do
+          param :group_id, Integer, desc: "Group ID"
+          param :group_name, String, desc: "Group name"
+          param :balance, Hash, desc: "Net balance for this group" do
+            param :type, String, desc: "owes_you | you_owe"
+            param :amount_cents, Integer, desc: "Net balance in cents"
+          end
+        end
+        param :activity, Array, desc: "All shared transactions involving both users, newest first" do
+          param :transaction_id, Integer, desc: "Transaction ID"
+          param :title, String, desc: "Transaction title"
+          param :amount_cents, Integer, desc: "Total transaction amount in cents"
+          param :transaction_date, String, desc: "ISO 8601 transaction date"
+          param :payer, Hash, desc: "User who paid for this transaction" do
+            param :id, Integer, desc: "User ID"
+            param :full_name, String, desc: "Full name"
+          end
+          param :group, Hash, desc: "Group this transaction belongs to (null for direct expenses)" do
+            param :id, Integer, desc: "Group ID"
+            param :name, String, desc: "Group name"
+          end
+          param :balance_impact, Hash, desc: "Bilateral financial impact from the current user's perspective" do
+            param :type, String, desc: "you_lent | you_borrowed | no_balance"
+            param :amount_cents, Integer, desc: "Impact amount in cents (0 for no_balance)"
+          end
+        end
+      end
+    end
+    def show
+      Api::V0::Friendships::Show.call(params.to_unsafe_h, current_user: current_user) do |result|
+        result.success { |data| render json: data, status: :ok }
+        result.failure(:not_found) { not_found_response }
+        result.failure { |errors| unprocessable_entity(errors) }
+      end
+    end
+
     api :POST, "/v0/friendships", "Send friend requests to multiple users"
     description <<~DESC
       Creates pending friend requests to the given users. Already-existing friendships are silently
