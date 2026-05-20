@@ -2,7 +2,6 @@ FactoryBot.define do
   factory :group do
     sequence(:name) { |n| "Group #{n}" }
     description { "A test group" }
-    kind { :custom }
     association :created_by, factory: :user
   end
 
