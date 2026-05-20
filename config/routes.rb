@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   admin_resources.instance_variable_get(:@collection).delete(comment_resource.resource_name) if comment_resource
   ActiveAdmin::Router.new(router: self, namespaces: ActiveAdmin.application.namespaces).apply
 
+  mount MissionControl::Jobs::Engine, at: "/jobs"
+
   get "up" => "health#show", as: :rails_health_check
 
   draw :api_v0

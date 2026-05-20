@@ -19,6 +19,9 @@ enum visibility_type:  { personal: 0, shared: 1 }
 
 # TransactionSplit
 enum split_method: { equal: 0, percentage: 1, shares: 2, exact: 3 }
+
+# Group
+enum kind: { custom: 0, friends: 1 }
 ```
 
 ---
@@ -44,6 +47,8 @@ has_many :transactions
 has_many :transaction_splits
 has_many :groups_users
 has_many :groups, through: :groups_users
+has_many :created_groups, class_name: 'Group', foreign_key: :created_by_id
+has_one  :friends_group, -> { friends }, class_name: 'Group', foreign_key: :created_by_id
 has_many :debts_from, class_name: 'Debt', foreign_key: :from_user_id
 has_many :debts_to,   class_name: 'Debt', foreign_key: :to_user_id
 ```
@@ -125,11 +130,15 @@ has_many   :transactions
 | created_by_id | bigint   | false | FK → users       |
 | name          | string   | false |                  |
 | description   | text     | true  |                  |
+| kind          | integer  | false | custom / friends |
 | created_at    | datetime | false |                  |
 | updated_at    | datetime | false |                  |
 
 ```ruby
+enum kind: { custom: 0, friends: 1 }
+
 validates :name, presence: true
+validates :kind, presence: true
 
 belongs_to :created_by, class_name: 'User'
 has_many   :groups_users
@@ -249,6 +258,45 @@ Indexes:
 add_index :transaction_splits, :transaction_id
 add_index :transaction_splits, :user_id
 ```
+
+---
+
+### friendships
+| Column         | Type     | Null  | Notes                              |
+|----------------|----------|-------|------------------------------------|
+| id             | bigint   | false | PK                                 |
+| user_a_id      | bigint   | false | FK → users (smaller ID)            |
+| user_b_id      | bigint   | false | FK → users (larger ID)             |
+| requested_by_id| bigint   | false | FK → users                         |
+| status         | integer  | false | pending / accepted / blocked       |
+| created_at     | datetime | false |                                    |
+| updated_at     | datetime | false |                                    |
+
+```ruby
+enum :status, { pending: 0, accepted: 1, blocked: 2 }
+
+validates :status, presence: true
+validate  :users_must_differ
+validate  :user_a_must_have_smaller_id  # enforces canonical ordering
+
+belongs_to :user_a,       class_name: 'User'
+belongs_to :user_b,       class_name: 'User'
+belongs_to :requested_by, class_name: 'User'
+
+scope :accepted, -> { where(status: :accepted) }
+scope :pending,  -> { where(status: :pending) }
+
+# Returns the other participant given one side
+def other_user(current_user) = current_user.id == user_a_id ? user_b : user_a
+def involves?(user) = user_a_id == user.id || user_b_id == user.id
+```
+
+Indexes:
+```ruby
+add_index :friendships, [:user_a_id, :user_b_id], unique: true
+```
+
+> Symmetric constraint: always store `min(user_a_id, user_b_id)` in `user_a_id` and `max` in `user_b_id`. The unique index on `[user_a_id, user_b_id]` guarantees one row per pair.
 
 ---
 

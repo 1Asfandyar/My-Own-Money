@@ -1,11 +1,8 @@
-module CategorySeed
-  module_function
-
-  def seed!
-    User.find_each do |user|
-      Categories::AssignDefaults.call(user)
-    end
-
-    Rails.logger.info "Assigned default categories to #{User.count} users"
+(1...5).each do |i|
+  email = ENV.fetch("TEST_USER_EMAIL_#{i}", "test.user#{i}@rupeerally.com")
+  user = User.find_by(email: email)
+  if user && !user.categories.exists?
+    Categories::AssignDefaults.call(user)
   end
+  Rails.logger.info "Seeded categories. Total count: #{user.categories.count}"
 end

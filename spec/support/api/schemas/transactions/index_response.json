@@ -1,14 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["success", "total_amount_cents", "total_absolute_amount_cents", "total_account_balance_cents", "total_spent_cents", "total_income_cents", "transactions"],
+  "required": ["success", "transactions"],
   "properties": {
     "success": { "type": "boolean", "enum": [true] },
-    "total_amount_cents": { "type": "integer" },
-    "total_absolute_amount_cents": { "type": "integer" },
-    "total_account_balance_cents": { "type": "integer" },
-    "total_spent_cents": { "type": "integer" },
-    "total_income_cents": { "type": "integer" },
     "transactions": {
       "type": "array",
       "items": { "$ref": "#/definitions/transaction" }
@@ -22,6 +17,7 @@
         "id":               { "type": "integer" },
         "title":            { "type": "string" },
         "amount_cents":     { "type": "integer" },
+        "split_amount_cents": { "type": "integer" },
         "transaction_type": { "type": "string" },
         "visibility_type":  { "type": "string" },
         "transaction_date": { "type": "string" },

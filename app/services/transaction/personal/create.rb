@@ -23,6 +23,7 @@ class Transaction::Personal::Create < ApplicationService
     ActiveRecord::Base.transaction do
       @transaction = Transaction.create!(transaction_params)
       update_account_balance(account: account, transaction_type: transaction_type, amount_cents: amount_cents)
+      update_category_balance(category: category, amount_cents: amount_cents)
     end
     Success(transaction)
   rescue ActiveRecord::RecordInvalid => e

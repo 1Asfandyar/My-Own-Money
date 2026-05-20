@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_18_071112) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_20_144333) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -41,6 +41,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_18_071112) do
   end
 
   create_table "categories", force: :cascade do |t|
+    t.integer "balance_cents", default: 0, null: false
     t.integer "category_type", null: false
     t.string "color"
     t.datetime "created_at", null: false
@@ -69,6 +70,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_18_071112) do
     t.index ["from_user_id", "to_user_id"], name: "index_debts_on_from_user_id_and_to_user_id", unique: true
     t.index ["from_user_id"], name: "index_debts_on_from_user_id"
     t.index ["to_user_id"], name: "index_debts_on_to_user_id"
+  end
+
+  create_table "friendships", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "requested_by_id", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_a_id", null: false
+    t.bigint "user_b_id", null: false
+    t.index ["requested_by_id"], name: "index_friendships_on_requested_by_id"
+    t.index ["user_a_id", "user_b_id"], name: "index_friendships_on_user_a_id_and_user_b_id", unique: true
+    t.index ["user_a_id"], name: "index_friendships_on_user_a_id"
+    t.index ["user_b_id"], name: "index_friendships_on_user_b_id"
   end
 
   create_table "groups", force: :cascade do |t|
@@ -159,6 +173,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_18_071112) do
   add_foreign_key "categories", "users"
   add_foreign_key "debts", "users", column: "from_user_id"
   add_foreign_key "debts", "users", column: "to_user_id"
+  add_foreign_key "friendships", "users", column: "requested_by_id"
+  add_foreign_key "friendships", "users", column: "user_a_id"
+  add_foreign_key "friendships", "users", column: "user_b_id"
   add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "groups_users", "groups"
   add_foreign_key "groups_users", "users"

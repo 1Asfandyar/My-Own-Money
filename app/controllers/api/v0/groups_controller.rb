@@ -10,7 +10,7 @@ module Api::V0
 
     api :GET, "/v0/groups", "List groups for the current user"
     description <<~DESC
-      Returns all groups the authenticated user belongs to, including groups they created.
+      Returns all groups the authenticated user belongs to.
 
       **TypeScript Types**
 
@@ -66,6 +66,7 @@ module Api::V0
     def index
       Api::V0::Groups::Index.call(params.to_unsafe_h, current_user: current_user) do |result|
         result.success { |data| render json: data, status: :ok }
+        result.failure { |errors| unprocessable_entity(errors) }
       end
     end
 
@@ -371,7 +372,7 @@ module Api::V0
 
     api :DELETE, "/v0/groups/:id/leave", "Leave a group"
     description <<~DESC
-      Removes the authenticated user from the group. The group creator cannot leave their own group.
+      Removes the authenticated user from the group.
 
       **TypeScript Types**
 
@@ -387,7 +388,6 @@ module Api::V0
     DESC
     param :id, Integer, required: true, description: "Group ID"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
-    error code: 403, desc: "Forbidden — group creator cannot leave their own group"
     error code: 404, desc: "Group not found or user is not a member"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"

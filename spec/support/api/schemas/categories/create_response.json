@@ -3,22 +3,23 @@
   "type": "object",
   "required": ["success", "category"],
   "properties": {
-    "success": { "type": "boolean", "enum": [true] },
+    "success":  { "type": "boolean", "enum": [true] },
     "category": { "$ref": "#/definitions/category" }
   },
   "definitions": {
     "category": {
       "type": "object",
-      "required": ["id", "name", "icon", "color", "category_type", "user_id", "created_at", "updated_at"],
+      "required": ["id", "name", "icon", "color", "category_type", "balance_cents", "user_id", "created_at", "updated_at"],
       "properties": {
-        "id":               { "type": "integer" },
-        "name":             { "type": "string" },
-        "icon":             { "type": ["string", "null"] },
-        "color":            { "type": ["string", "null"] },
-        "category_type":    { "type": "string", "enum": ["expense", "income"] },
-        "user_id":          { "type": "integer" },
-        "created_at":       { "type": "string" },
-        "updated_at":       { "type": "string" }
+        "id":            { "type": "integer" },
+        "name":          { "type": "string" },
+        "icon":          { "type": ["string", "null"] },
+        "color":         { "type": ["string", "null"] },
+        "category_type": { "type": "string", "enum": ["expense", "income"] },
+        "balance_cents": { "type": "integer", "minimum": 0 },
+        "user_id":       { "type": "integer" },
+        "created_at":    { "type": "string" },
+        "updated_at":    { "type": "string" }
       }
     }
   }

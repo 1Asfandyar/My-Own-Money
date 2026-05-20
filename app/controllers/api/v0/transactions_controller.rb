@@ -21,6 +21,7 @@ module Api::V0
         date_from?: string; // ISO 8601
         date_to?: string;   // ISO 8601
         search?: string;    // matches title or note (case-insensitive)
+        by_friends?: boolean; // group shared expenses by friend
       };
 
       // Output
@@ -52,6 +53,7 @@ module Api::V0
     param :date_from, String, required: false, desc: "Filter transactions on or after this ISO 8601 datetime"
     param :date_to, String, required: false, desc: "Filter transactions on or before this ISO 8601 datetime"
     param :search, String, required: false, desc: "Search by title or note (case-insensitive)"
+    param :by_friends, :bool, required: false, desc: "Return shared transactions grouped by friend"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     returns code: 200, desc: "Success" do

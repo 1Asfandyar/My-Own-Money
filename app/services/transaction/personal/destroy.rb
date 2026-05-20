@@ -19,6 +19,10 @@ class Transaction::Personal::Destroy < ApplicationService
         transaction_type: transaction.transaction_type,
         amount_cents:     transaction.amount_cents
       )
+      revert_category_balance(
+        category:     transaction.category,
+        amount_cents: transaction.amount_cents
+      )
       transaction.destroy!
     end
     Success(true)

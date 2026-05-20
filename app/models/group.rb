@@ -20,7 +20,7 @@
 class Group < ApplicationRecord
   validates :name, presence: true
 
-  belongs_to :created_by, class_name: "User"
+  belongs_to :created_by, class_name: "User", inverse_of: :created_groups
   has_many :groups_users, dependent: :destroy
   has_many :users, through: :groups_users
   has_many :transactions

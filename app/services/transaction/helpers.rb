@@ -36,4 +36,16 @@ module Transaction::Helpers
     to_account.current_balance_cents -= amount_cents
     to_account.save!
   end
+
+  def update_category_balance(category:, amount_cents:)
+    return unless category
+    new_balance = category.balance_cents + amount_cents
+    category.update!(balance_cents: new_balance)
+  end
+
+  def revert_category_balance(category:, amount_cents:)
+    return unless category
+    new_balance = category.balance_cents - amount_cents
+    category.update!(balance_cents: new_balance)
+  end
 end

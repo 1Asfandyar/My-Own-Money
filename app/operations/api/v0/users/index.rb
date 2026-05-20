@@ -4,12 +4,14 @@ module Api::V0::Users
 
     class Contract < Api::V0::ApplicationContract
       params do
-        optional(:query).maybe(:string)
+        required(:email).filled(:string)
       end
+
+      rule(:email).validate(:email_format)
     end
 
     def call(params, current_user:)
-      params = yield validate_contract(params.slice(:query))
+      params = yield validate_contract(params.slice(:email))
       @current_user = current_user
       @params = params
 
@@ -27,10 +29,7 @@ module Api::V0::Users
     end
 
     def filtered_users
-      scope = User.all.order(created_at: :desc)
-      return scope if params[:query].blank?
-
-      scope.where("email ILIKE :query", query: "%#{params[:query]}%")
+      User.where("LOWER(email) = ?", params[:email].downcase)
     end
   end
 end

@@ -88,6 +88,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating amount_cents" do
+      let(:category)        { create(:category, user: user, balance_cents: 5000) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { amount_cents: 9999 } }
 
@@ -95,6 +96,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to have_http_status(:ok)
         # account started at 0: revert expense (+5000) then apply new expense (-9999) → -4999
         expect(account.reload.current_balance_cents).to eq(-4999)
+      end
+
+      it "adjusts category balance_cents to the new amount" do
+        # revert old 5000, apply new 9999 → 9999
+        expect(category.reload.balance_cents).to eq(9999)
       end
     end
 
@@ -134,6 +140,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating category_id" do
+      let(:category)        { create(:category, user: user, balance_cents: 5000) }
       let(:new_category)    { create(:category, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { category_id: new_category.id } }
@@ -141,6 +148,12 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 200 and updates the category" do
         expect(response).to have_http_status(:ok)
         expect(transaction.reload.category_id).to eq(new_category.id)
+      end
+
+      it "moves balance_cents from old category to new category" do
+        # old category: 5000 - 5000 = 0; new category: 0 + 5000 = 5000
+        expect(category.reload.balance_cents).to eq(0)
+        expect(new_category.reload.balance_cents).to eq(5000)
       end
     end
 

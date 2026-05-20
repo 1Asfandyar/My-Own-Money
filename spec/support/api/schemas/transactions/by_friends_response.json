@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "friends"],
+  "properties": {
+    "success": { "type": "boolean", "enum": [true] },
+    "friends": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["friend", "transactions"],
+        "properties": {
+          "friend": { "$ref": "#/definitions/user" },
+          "transactions": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/transaction" }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "user": {
+      "type": "object",
+      "required": ["id", "full_name", "mobile_number", "email", "role", "onboarding_completed", "created_at", "updated_at"],
+      "properties": {
+        "id":                   { "type": "integer" },
+        "full_name":            { "type": "string" },
+        "mobile_number":        { "type": "string" },
+        "email":                { "type": "string" },
+        "role":                 { "type": "string" },
+        "onboarding_completed": { "type": "boolean" },
+        "created_at":           { "type": "string" },
+        "updated_at":           { "type": "string" }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "required": ["id", "title", "transaction_type", "visibility_type", "transaction_date", "account_id", "currency_id", "user_id", "created_at", "updated_at"],
+      "properties": {
+        "id":                  { "type": "integer" },
+        "title":               { "type": "string" },
+        "transaction_type":    { "type": "string" },
+        "visibility_type":     { "type": "string" },
+        "transaction_date":    { "type": "string" },
+        "note":                { "type": ["string", "null"] },
+        "account_id":          { "type": "integer" },
+        "transfer_account_id": { "type": ["integer", "null"] },
+        "category_id":         { "type": ["integer", "null"] },
+        "currency_id":         { "type": "integer" },
+        "user_id":             { "type": "integer" },
+        "created_at":          { "type": "string" },
+        "updated_at":          { "type": "string" }
+      }
+    }
+  }
+}

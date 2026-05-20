@@ -12,8 +12,8 @@ module Api::V0::Auth
       @params = params
 
       payload = verify_google_token
-      return Failure(errors: { base: ["invalid_token"] }) unless payload
-      return Failure(errors: { base: ["email_not_verified"] }) unless payload["email_verified"]
+      return Failure(errors: { base: [ "invalid_token" ] }) unless payload
+      return Failure(errors: { base: [ "email_not_verified" ] }) unless payload["email_verified"]
 
       user = find_or_create_user(payload)
       return Failure(:user_creation_failed) unless user&.persisted?
