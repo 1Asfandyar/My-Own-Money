@@ -21,5 +21,7 @@ namespace :api do
         delete "leave",            to: "groups#leave"
       end
     end
+
+    resources :friendships, only: [ :index, :create, :update, :destroy ]
   end
 end
