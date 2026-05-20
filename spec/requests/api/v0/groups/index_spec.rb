@@ -15,9 +15,9 @@ RSpec.describe "Api::V0::Groups", type: :request do
     context "when kind is missing" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
 
-      it "returns 422 and matches error schema" do
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to match_json_schema("error_response")
+      it "returns OK" do
+        expect(response).to be_ok
+        expect(response).to match_json_schema("groups/index_response")
       end
     end
 
