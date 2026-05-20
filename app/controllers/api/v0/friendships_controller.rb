@@ -33,8 +33,7 @@ module Api::V0
         id: number;
         status: "pending" | "accepted" | "blocked";
         requested_by_id: number;
-        user_a: User;
-        user_b: User;
+        friend: User;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
       };
@@ -60,12 +59,7 @@ module Api::V0
         param :id, Integer, desc: "Friendship ID"
         param :status, String, desc: "Friendship status: pending, accepted, or blocked"
         param :requested_by_id, Integer, desc: "ID of the user who sent the friend request"
-        param :user_a, Hash, desc: "User with the lower ID in the friendship" do
-          param :id, Integer, desc: "User ID"
-          param :full_name, String, desc: "Full name"
-          param :email, String, desc: "Email address"
-        end
-        param :user_b, Hash, desc: "User with the higher ID in the friendship" do
+        param :friend, Hash, desc: "The other user in the friendship" do
           param :id, Integer, desc: "User ID"
           param :full_name, String, desc: "Full name"
           param :email, String, desc: "Email address"
@@ -104,8 +98,7 @@ module Api::V0
         id: number;
         status: "pending";
         requested_by_id: number;
-        user_a: User;
-        user_b: User;
+        friend: User;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
       };
@@ -120,12 +113,7 @@ module Api::V0
         param :id, Integer, desc: "Friendship ID"
         param :status, String, desc: "Always 'pending' for new requests"
         param :requested_by_id, Integer, desc: "ID of the user who sent the request (current user)"
-        param :user_a, Hash, desc: "User with the lower ID" do
-          param :id, Integer, desc: "User ID"
-          param :full_name, String, desc: "Full name"
-          param :email, String, desc: "Email address"
-        end
-        param :user_b, Hash, desc: "User with the higher ID" do
+        param :friend, Hash, desc: "The other user in the friendship" do
           param :id, Integer, desc: "User ID"
           param :full_name, String, desc: "Full name"
           param :email, String, desc: "Email address"
@@ -181,12 +169,7 @@ module Api::V0
         param :id, Integer, desc: "Friendship ID"
         param :status, String, desc: "Updated status"
         param :requested_by_id, Integer, desc: "ID of the original requester"
-        param :user_a, Hash, desc: "User with the lower ID" do
-          param :id, Integer, desc: "User ID"
-          param :full_name, String, desc: "Full name"
-          param :email, String, desc: "Email address"
-        end
-        param :user_b, Hash, desc: "User with the higher ID" do
+        param :friend, Hash, desc: "The other user in the friendship" do
           param :id, Integer, desc: "User ID"
           param :full_name, String, desc: "Full name"
           param :email, String, desc: "Email address"

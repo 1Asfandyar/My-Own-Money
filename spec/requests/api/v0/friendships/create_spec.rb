@@ -33,6 +33,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         expect(response).to match_json_schema("friendships/create_response")
       end
 
+      it "returns the other user as friend" do
+        friendship = JSON.parse(response.body)["friendships"].first
+        expect(friendship["friend"]["id"]).to eq(other_user.id)
+      end
+
       it "persists the pending friendship" do
         user_a_id, user_b_id = [ user.id, other_user.id ].minmax
         expect(Friendship.find_by(user_a_id: user_a_id, user_b_id: user_b_id)).to be_present

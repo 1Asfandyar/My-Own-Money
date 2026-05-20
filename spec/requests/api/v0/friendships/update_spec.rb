@@ -31,6 +31,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         expect(response).to match_json_schema("friendships/update_response")
       end
 
+      it "returns the requester as friend from the receiver's perspective" do
+        f = JSON.parse(response.body)["friendship"]
+        expect(f["friend"]["id"]).to eq(requester.id)
+      end
+
       it "updates the friendship status to accepted" do
         expect(friendship.reload.status).to eq("accepted")
       end

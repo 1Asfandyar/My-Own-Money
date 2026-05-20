@@ -4,8 +4,11 @@ module Api::V0
 
     fields :status, :requested_by_id, :created_at, :updated_at
 
-    association :user_a, blueprint: Api::V0::UserSerializer
-    association :user_b, blueprint: Api::V0::UserSerializer
+    field :friend do |friendship, options|
+      current_user = options[:current_user]
+      other = friendship.other_user(current_user)
+      Api::V0::UserSerializer.render_as_hash(other)
+    end
 
     field :balance do |friendship, options|
       current_user_id = options[:current_user_id]

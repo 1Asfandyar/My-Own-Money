@@ -24,7 +24,7 @@ module Api::V0::Friendships
       if params[:status] == "rejected"
         Success(success: true)
       else
-        Success(success: true, friendship: Api::V0::FriendshipSerializer.render_as_hash(@friendship))
+        Success(success: true, friendship: Api::V0::FriendshipSerializer.render_as_hash(friendship, current_user: current_user, current_user_id: current_user.id))
       end
     end
 

@@ -17,13 +17,13 @@ module Api::V0::Friendships
 
       Success(
         success: true,
-        friendships: Api::V0::FriendshipSerializer.render_as_hash(@friendships)
+        friendships: Api::V0::FriendshipSerializer.render_as_hash(friendships, current_user: current_user, current_user_id: current_user.id)
       )
     end
 
     private
 
-    attr_reader :current_user, :params
+    attr_reader :current_user, :params, :friendships
 
     def validate_users
       target_ids = params[:user_ids].uniq.reject { |id| id == current_user.id }

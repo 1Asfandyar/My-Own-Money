@@ -28,6 +28,7 @@ module Api::V0::Friendships
         success: true,
         friendships: Api::V0::FriendshipSerializer.render_as_hash(
           fs,
+          current_user: current_user,
           current_user_id: current_user.id,
           debt_map: build_debt_map(fs)
         )

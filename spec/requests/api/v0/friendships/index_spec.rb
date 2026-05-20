@@ -44,6 +44,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         expect(ids).to include(f_accepted.id)
         expect(ids).not_to include(f_outgoing.id, f_incoming.id, f_blocked_out.id)
       end
+
+      it "returns the other user as friend on each friendship" do
+        f = JSON.parse(response.body)["friendships"].find { |x| x["id"] == f_accepted.id }
+        expect(f["friend"]["id"]).to eq(accepted_friend.id)
+      end
     end
 
     context "when filtering by incoming pending requests" do

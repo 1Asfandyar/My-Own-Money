@@ -9,13 +9,12 @@
   "definitions": {
     "friendship": {
       "type": "object",
-      "required": ["id", "status", "requested_by_id", "user_a", "user_b", "created_at", "updated_at"],
+      "required": ["id", "status", "requested_by_id", "friend", "created_at", "updated_at"],
       "properties": {
         "id":               { "type": "integer" },
         "status":           { "type": "string" },
         "requested_by_id":  { "type": "integer" },
-        "user_a":           { "$ref": "#/definitions/user" },
-        "user_b":           { "$ref": "#/definitions/user" },
+        "friend":           { "$ref": "#/definitions/user" },
         "created_at":       { "type": "string" },
         "updated_at":       { "type": "string" }
       }
