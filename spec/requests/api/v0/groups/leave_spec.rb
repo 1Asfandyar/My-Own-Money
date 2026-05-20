@@ -27,21 +27,6 @@ RSpec.describe "Api::V0::Groups", type: :request do
       end
     end
 
-    context "when the owner leaves their default friends group" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:group)           { user.friends_group }
-      let!(:membership)     { group.groups_users.find_by!(user: user) }
-
-      it "returns 403 and matches error schema" do
-        expect(response).to have_http_status(:forbidden)
-        expect(response).to match_json_schema("error_response")
-      end
-
-      it "keeps the owner as a member" do
-        expect(group.users.reload).to include(user)
-      end
-    end
-
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do

@@ -10,8 +10,7 @@ module Api::V0
 
     api :GET, "/v0/groups", "List groups for the current user"
     description <<~DESC
-      Returns groups the authenticated user belongs to, filtered by required `kind`.
-      Use `kind=friends` to fetch the default friends group or `kind=custom` to fetch custom groups.
+      Returns all groups the authenticated user belongs to.
 
       **TypeScript Types**
 
@@ -26,7 +25,6 @@ module Api::V0
         id: number;
         name: string;
         description: string | null;
-        kind: "custom" | "friends";
         created_by_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -44,16 +42,13 @@ module Api::V0
       };
       ```
     DESC
-    param :kind, String, required: true, description: "Group kind filter: custom or friends"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
-    error code: 422, desc: "Validation errors"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
       param :groups, Array, desc: "List of groups the user belongs to" do
         param :id, Integer, desc: "Group ID"
         param :name, String, desc: "Group name"
         param :description, String, desc: "Group description"
-        param :kind, String, desc: "Group kind: custom or friends"
         param :created_by_id, Integer, desc: "ID of the user who created the group"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -98,7 +93,6 @@ module Api::V0
         id: number;
         name: string;
         description: string | null;
-        kind: "custom" | "friends";
         created_by_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -127,7 +121,6 @@ module Api::V0
         param :id, Integer, desc: "Group ID"
         param :name, String, desc: "Group name"
         param :description, String, desc: "Group description"
-        param :kind, String, desc: "Group kind: custom or friends"
         param :created_by_id, Integer, desc: "ID of the user who created the group"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -174,7 +167,6 @@ module Api::V0
         id: number;
         name: string;
         description: string | null;
-        kind: "custom" | "friends";
         created_by_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -195,7 +187,6 @@ module Api::V0
         param :id, Integer, desc: "Group ID"
         param :name, String, desc: "Group name"
         param :description, String, desc: "Group description"
-        param :kind, String, desc: "Group kind: custom or friends"
         param :created_by_id, Integer, desc: "ID of the user who created the group"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -274,7 +265,6 @@ module Api::V0
         id: number;
         name: string;
         description: string | null;
-        kind: "custom" | "friends";
         created_by_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -304,7 +294,6 @@ module Api::V0
         param :id, Integer, desc: "Group ID"
         param :name, String, desc: "Group name"
         param :description, String, desc: "Group description"
-        param :kind, String, desc: "Group kind: custom or friends"
         param :created_by_id, Integer, desc: "ID of the user who created the group"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -383,7 +372,7 @@ module Api::V0
 
     api :DELETE, "/v0/groups/:id/leave", "Leave a group"
     description <<~DESC
-      Removes the authenticated user from the group. The group creator cannot leave their own group.
+      Removes the authenticated user from the group.
 
       **TypeScript Types**
 
@@ -399,7 +388,6 @@ module Api::V0
     DESC
     param :id, Integer, required: true, description: "Group ID"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
-    error code: 403, desc: "Forbidden — group creator cannot leave their own group"
     error code: 404, desc: "Group not found or user is not a member"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"

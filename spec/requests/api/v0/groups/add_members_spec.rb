@@ -44,18 +44,6 @@ RSpec.describe "Api::V0::Groups", type: :request do
       end
     end
 
-    context "when adding a user to the default friends group" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:group)           { user.friends_group }
-      let!(:membership)     { group.groups_users.find_by!(user: user) }
-
-      it "adds the user to the friends group" do
-        expect(response).to have_http_status(:ok)
-        expect(group.reload).to be_friends
-        expect(group.users).to include(other_user)
-      end
-    end
-
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do

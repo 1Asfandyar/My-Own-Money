@@ -9,12 +9,11 @@
   "definitions": {
     "group": {
       "type": "object",
-      "required": ["id", "name", "kind", "created_by_id", "members", "created_at", "updated_at"],
+      "required": ["id", "name", "created_by_id", "members", "created_at", "updated_at"],
       "properties": {
         "id":            { "type": "integer" },
         "name":          { "type": "string" },
         "description":   { "type": ["string", "null"] },
-        "kind":          { "type": "string", "enum": ["custom", "friends"] },
         "created_by_id": { "type": "integer" },
         "members": {
           "type": "array",
