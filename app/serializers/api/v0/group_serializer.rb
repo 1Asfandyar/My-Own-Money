@@ -4,8 +4,6 @@ module Api::V0
 
     fields :name, :description, :kind, :created_by_id, :created_at, :updated_at
 
-    association :members, blueprint: Api::V0::UserSerializer do |group, _options|
-      group.users
-    end
+    association :users, blueprint: Api::V0::UserSerializer, name: :members
   end
 end

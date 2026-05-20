@@ -60,6 +60,15 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    context "when the personal transaction has a category" do
+      let(:category)        { create(:category, user: user, balance_cents: 5000) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "reverts the category balance_cents to 0" do
+        expect(category.reload.balance_cents).to eq(0)
+      end
+    end
+
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do

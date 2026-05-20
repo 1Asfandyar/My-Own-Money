@@ -4,16 +4,12 @@ module Api::V0::Groups
 
     class Contract < Api::V0::ApplicationContract
       params do
-        required(:kind).filled(:string)
-      end
-
-      rule(:kind) do
-        key.failure("must be one of: custom, friends") unless Group.kinds.key?(value)
+        optional(:kind).maybe(:string, included_in?: Group.kinds.keys)
       end
     end
 
     def call(params, current_user:)
-      @params = yield validate_contract(params.slice(:kind))
+      @params       = params
       @current_user = current_user
 
       Success(

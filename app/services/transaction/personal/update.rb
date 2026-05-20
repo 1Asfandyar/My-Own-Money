@@ -17,15 +17,19 @@ class Transaction::Personal::Update < ApplicationService
     old_account      = transaction.account
     old_type         = transaction.transaction_type
     old_amount_cents = transaction.amount_cents
+    old_category     = transaction.category
 
     new_account      = attrs[:account]          || old_account
     new_type         = attrs[:transaction_type] || old_type
     new_amount_cents = attrs[:amount_cents]     || old_amount_cents
+    new_category     = attrs[:category]         || old_category
 
     ActiveRecord::Base.transaction do
       revert_account_balance(account: old_account, transaction_type: old_type, amount_cents: old_amount_cents)
+      revert_category_balance(category: old_category, amount_cents: old_amount_cents)
       transaction.update!(update_params)
       update_account_balance(account: new_account.reload, transaction_type: new_type, amount_cents: new_amount_cents)
+      update_category_balance(category: new_category, amount_cents: new_amount_cents)
     end
 
     Success(transaction)
