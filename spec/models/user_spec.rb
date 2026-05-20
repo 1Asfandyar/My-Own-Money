@@ -1,28 +1,6 @@
 require 'rails_helper'
 
 RSpec.describe User, type: :model do
-  describe "default friends group" do
-    it "creates a friends group with the user as the only member after create" do
-      user = create(:user)
-
-      group = user.reload.friends_group
-
-      expect(group).to be_friends
-      expect(group.name).to eq("#{user.full_name}'s Friends")
-      expect(group.description).to eq("Default Friend's Group")
-      expect(group.users).to contain_exactly(user)
-    end
-
-    it "does not duplicate the friends group or membership when assignment runs again" do
-      user = create(:user)
-
-      expect { Groups::AssignDefaultFriendsGroup.call(user) }
-        .not_to change { Group.friends.where(created_by: user).count }
-
-      expect(user.reload.friends_group.users.where(id: user.id).count).to eq(1)
-    end
-  end
-
   describe "default categories" do
     it "assigns predefined categories after create" do
       user = create(:user)

@@ -32,14 +32,7 @@ RSpec.describe "Api::V0::Groups", type: :request do
       it "persists the group and adds the creator as a member" do
         group = Group.find_by(name: name)
         expect(group).to be_present
-        expect(group).to be_custom
         expect(group.users).to include(user)
-      end
-
-      it "returns a custom group kind" do
-        data = JSON.parse(response.body)
-
-        expect(data.dig("group", "kind")).to eq("custom")
       end
     end
 

@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "friendship"],
+  "properties": {
+    "success":    { "type": "boolean", "enum": [true] },
+    "friendship": { "$ref": "#/definitions/friendship_ledger" }
+  },
+  "definitions": {
+    "friendship_ledger": {
+      "type": "object",
+      "required": ["id", "status", "requested_by_id", "friend", "balance_summary", "group_balances", "activity", "created_at", "updated_at"],
+      "properties": {
+        "id":              { "type": "integer" },
+        "status":          { "type": "string" },
+        "requested_by_id": { "type": "integer" },
+        "created_at":      { "type": "string" },
+        "updated_at":      { "type": "string" },
+        "friend":          { "$ref": "#/definitions/user" },
+        "balance_summary": { "$ref": "#/definitions/balance" },
+        "group_balances":  { "type": "array", "items": { "$ref": "#/definitions/group_balance" } },
+        "activity":        { "type": "array", "items": { "$ref": "#/definitions/activity_item" } }
+      }
+    },
+    "user": {
+      "type": "object",
+      "required": ["id", "full_name", "email"],
+      "properties": {
+        "id":        { "type": "integer" },
+        "full_name": { "type": "string" },
+        "email":     { "type": "string" }
+      }
+    },
+    "balance": {
+      "type": "object",
+      "required": ["type", "amount_cents"],
+      "properties": {
+        "type":         { "type": "string", "enum": ["owes_you", "you_owe", "settled_up"] },
+        "amount_cents": { "type": "integer" }
+      }
+    },
+    "group_balance": {
+      "type": "object",
+      "required": ["group_id", "group_name", "balance"],
+      "properties": {
+        "group_id":   { "type": "integer" },
+        "group_name": { "type": "string" },
+        "balance":    { "$ref": "#/definitions/balance" }
+      }
+    },
+    "activity_item": {
+      "type": "object",
+      "required": ["transaction_id", "title", "amount_cents", "transaction_date", "payer", "balance_impact"],
+      "properties": {
+        "transaction_id":   { "type": "integer" },
+        "title":            { "type": "string" },
+        "amount_cents":     { "type": "integer" },
+        "transaction_date": { "type": "string" },
+        "payer":            { "$ref": "#/definitions/user" },
+        "group": {
+          "oneOf": [
+            { "$ref": "#/definitions/group_ref" },
+            { "type": "null" }
+          ]
+        },
+        "balance_impact": { "$ref": "#/definitions/balance_impact" }
+      }
+    },
+    "group_ref": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id":   { "type": "integer" },
+        "name": { "type": "string" }
+      }
+    },
+    "balance_impact": {
+      "type": "object",
+      "required": ["type", "amount_cents"],
+      "properties": {
+        "type":         { "type": "string", "enum": ["you_lent", "you_borrowed", "no_balance"] },
+        "amount_cents": { "type": "integer" }
+      }
+    }
+  }
+}

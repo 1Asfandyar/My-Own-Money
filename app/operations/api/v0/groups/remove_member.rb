@@ -10,7 +10,6 @@ module Api::V0::Groups
 
       @target_user = User.find_by(id: params[:user_id])
       return Failure(:not_found) unless target_user
-      return Failure(:forbidden) if group.friends? && target_user.id == group.created_by_id
 
       yield remove
 

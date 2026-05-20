@@ -7,7 +7,6 @@ module Api::V0::Groups
       @group        = current_user.groups.find_by(id: params[:id])
 
       return Failure(:not_found) unless group
-      return Failure(:forbidden) if group.friends?
 
       return Failure(errors: group.errors.to_hash) unless group.destroy
 

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["success", "friendships"],
+  "properties": {
+    "success": { "type": "boolean", "enum": [true] },
+    "friendships": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/friendship" }
+    }
+  },
+  "definitions": {
+    "friendship": {
+      "type": "object",
+      "required": ["id", "status", "requested_by_id", "friend", "created_at", "updated_at", "balance"],
+      "properties": {
+        "id":               { "type": "integer" },
+        "status":           { "type": "string" },
+        "requested_by_id":  { "type": "integer" },
+        "friend":           { "$ref": "#/definitions/user" },
+        "created_at":       { "type": "string" },
+        "updated_at":       { "type": "string" },
+        "balance":          { "$ref": "#/definitions/balance" }
+      }
+    },
+    "balance": {
+      "type": "object",
+      "required": ["type", "amount_cents"],
+      "properties": {
+        "type":         { "type": "string", "enum": ["owes_you", "you_owe", "settled_up"] },
+        "amount_cents": { "type": "integer" }
+      }
+    },
+    "user": {
+      "type": "object",
+      "required": ["id", "full_name", "email"],
+      "properties": {
+        "id":        { "type": "integer" },
+        "full_name": { "type": "string" },
+        "email":     { "type": "string" }
+      }
+    }
+  }
+}

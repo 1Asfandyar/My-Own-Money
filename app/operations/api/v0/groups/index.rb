@@ -2,14 +2,7 @@ module Api::V0::Groups
   class Index
     include Api::V0::ApplicationOperation
 
-    class Contract < Api::V0::ApplicationContract
-      params do
-        optional(:kind).maybe(:string, included_in?: Group.kinds.keys)
-      end
-    end
-
     def call(params, current_user:)
-      @params       = params
       @current_user = current_user
 
       Success(
@@ -20,16 +13,10 @@ module Api::V0::Groups
 
     private
 
-    attr_reader :current_user, :params
+    attr_reader :current_user
 
     def groups
-      scope = current_user.groups.includes(:groups_users, :users)
-
-      if params[:kind] == "custom"
-        scope.custom
-      else
-        scope.friends
-      end
+      current_user.groups.includes(:groups_users, :users)
     end
   end
 end
