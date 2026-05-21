@@ -33,5 +33,7 @@ module Hopin
     config.middleware.use ActionDispatch::Cookies
     config.middleware.use ActionDispatch::Session::CookieStore
     config.middleware.use ActionDispatch::Flash
+
+    config.solid_queue.connects_to = { database: { writing: :queue } }
   end
 end
