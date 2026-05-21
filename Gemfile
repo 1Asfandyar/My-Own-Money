@@ -19,6 +19,7 @@ gem "rack-attack"             # rate limiting + brute-force protection
 # ─── Authentication ───────────────────────────────────────────────────────────
 gem "devise"
 gem "devise-jwt"
+gem "google-id-token"
 
 # ─── Admin Panel ──────────────────────────────────────────────────────────────
 gem "activeadmin"             # bump to ~> 4.0 once released for full Rails 8 support

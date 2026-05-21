@@ -127,7 +127,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 201 and defaults the date to today" do
         expect(response).to have_http_status(:created)
         t = Transaction.find_by(title: title, user_id: user.id)
-        expect(t.transaction_date.to_date).to eq(Date.today)
+        expect(t.transaction_date.to_date).to eq(Date.current)
       end
     end
 
@@ -295,7 +295,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 201 and defaults the date to today" do
         expect(response).to have_http_status(:created)
         t = Transaction.find_by(title: "Date-less shared")
-        expect(t.transaction_date.to_date).to eq(Date.today)
+        expect(t.transaction_date.to_date).to eq(Date.current)
       end
     end
 
