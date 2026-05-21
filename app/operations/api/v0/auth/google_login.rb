@@ -33,10 +33,13 @@ module Api::V0::Auth
     end
 
     def find_or_create_user(payload)
-      user = User.find_or_initialize_by(email: payload["email"])
-      user.assign_attributes(uid: payload["sub"], provider: "google", full_name: payload["name"])
-      user.password = SecureRandom.hex(10) if user.new_record?
-      user.save ? user : nil
+      user = User.find_by(email: payload["email"])
+      unless user
+        user = User.new(uid: payload["sub"], provider: "google", full_name: payload["name"], email: payload["email"])
+        user.password = SecureRandom.hex(10)
+        user.save!
+      end
+      user.reload
     end
 
     def auth_payload(user)
