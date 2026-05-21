@@ -12,7 +12,7 @@
   "definitions": {
     "transaction": {
       "type": "object",
-      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "currency_id", "user_id", "created_at", "updated_at"],
+      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "category", "currency_id", "user_id", "created_at", "updated_at"],
       "properties": {
         "id":               { "type": "integer" },
         "title":            { "type": "string" },
@@ -25,10 +25,26 @@
         "account_id":          { "type": "integer" },
         "transfer_account_id": { "type": ["integer", "null"] },
         "category_id":         { "type": ["integer", "null"] },
+        "category":            { "oneOf": [{ "$ref": "#/definitions/category" }, { "type": "null" }] },
         "currency_id":      { "type": "integer" },
         "user_id":          { "type": "integer" },
         "created_at":       { "type": "string" },
         "updated_at":       { "type": "string" }
+      }
+    },
+    "category": {
+      "type": "object",
+      "required": ["id", "name", "icon", "color", "category_type", "balance_cents", "user_id", "created_at", "updated_at"],
+      "properties": {
+        "id":            { "type": "integer" },
+        "name":          { "type": "string" },
+        "icon":          { "type": ["string", "null"] },
+        "color":         { "type": ["string", "null"] },
+        "category_type": { "type": "string", "enum": ["expense", "income"] },
+        "balance_cents": { "type": "integer", "minimum": 0 },
+        "user_id":       { "type": "integer" },
+        "created_at":    { "type": "string" },
+        "updated_at":    { "type": "string" }
       }
     }
   }

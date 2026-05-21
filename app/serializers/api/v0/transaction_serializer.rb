@@ -13,5 +13,9 @@ module Api::V0
     view :with_categories do
       excludes :split_amount_cents
     end
+
+    view :with_category do
+      association :category, blueprint: Api::V0::CategorySerializer
+    end
   end
 end
