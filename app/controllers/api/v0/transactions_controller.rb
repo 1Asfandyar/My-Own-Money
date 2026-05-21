@@ -21,7 +21,6 @@ module Api::V0
         date_from?: string; // ISO 8601
         date_to?: string;   // ISO 8601
         search?: string;    // matches title or note (case-insensitive)
-        by_friends?: boolean; // group shared expenses by friend
       };
 
       // Output
@@ -41,7 +40,20 @@ module Api::V0
         account_id: number | null;
         transfer_account_id: number | null;
         category_id: number | null;
+        category: Category | null;
         currency_id: number;
+        user_id: number;
+        created_at: string; // ISO 8601
+        updated_at: string; // ISO 8601
+      };
+
+      type Category = {
+        id: number;
+        name: string;
+        icon: string | null;
+        color: string | null;
+        balance_cents: number;
+        category_type: "expense" | "income";
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -53,7 +65,6 @@ module Api::V0
     param :date_from, String, required: false, desc: "Filter transactions on or after this ISO 8601 datetime"
     param :date_to, String, required: false, desc: "Filter transactions on or before this ISO 8601 datetime"
     param :search, String, required: false, desc: "Search by title or note (case-insensitive)"
-    param :by_friends, :bool, required: false, desc: "Return shared transactions grouped by friend"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     returns code: 200, desc: "Success" do
@@ -69,6 +80,7 @@ module Api::V0
         param :account_id, Integer, desc: "Account ID (nil for transfers)"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers)"
+        param :category, Hash, desc: "Category data (nil for transfers)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"

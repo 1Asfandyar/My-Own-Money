@@ -11,7 +11,11 @@ namespace :api do
 
     resources :currencies, only: [ :index ]
     resources :accounts
-    resources :categories
+    resources :categories do
+      collection do
+        get :summary
+      end
+    end
 
     resources :transactions
 
