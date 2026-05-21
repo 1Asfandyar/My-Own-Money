@@ -4,17 +4,11 @@ module Api::V0::Transactions
 
     class Contract < Api::V0::ApplicationContract
       params do
-        required(:type).value(included_in?: %w[shared personal none])
         optional(:account_id).maybe(:integer)
         optional(:category_id).maybe(:integer)
         optional(:date_from).maybe(:string)
         optional(:date_to).maybe(:string)
         optional(:search).maybe(:string)
-      end
-
-      rule(:account_id) do
-        next unless values[:type] == "personal"
-        key.failure("is required for type personal") if value.nil?
       end
 
       rule(:date_from) do
@@ -50,18 +44,11 @@ module Api::V0::Transactions
     end
 
     def response_payload
-      case params[:type]
-      when "shared"
-        Api::V0::Transactions::SharedTransactionsService.new(current_user, params).call
-      when "personal"
-        Api::V0::Transactions::PersonalTransactionsService.new(current_user, params).call
-      else # 'none'
-        transactions.each { |t| t.define_singleton_method(:split_amount_cents) { 0 } }
-        {
-          success: true,
-          transactions: Api::V0::TransactionSerializer.render_as_hash(transactions)
-        }
-      end
+      transactions.each { |t| t.define_singleton_method(:split_amount_cents) { 0 } }
+      {
+        success: true,
+        transactions: Api::V0::TransactionSerializer.render_as_hash(transactions, view: :with_category)
+      }
     end
 
     def transactions
