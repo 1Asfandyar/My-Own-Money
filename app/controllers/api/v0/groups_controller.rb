@@ -70,6 +70,106 @@ module Api::V0
       end
     end
 
+    api :GET, "/v0/groups/:id", "Show a group the current user belongs to"
+    description <<~DESC
+      Returns a single group by ID. The authenticated user must be a member of the group.
+      Includes all transactions associated with the group.
+
+      **TypeScript Types**
+
+      ```typescript
+      // Output
+      type Response = {
+        success: boolean;
+        group: Group;
+      };
+
+      type Group = {
+        id: number;
+        name: string;
+        description: string | null;
+        created_by_id: number;
+        created_at: string; // ISO 8601
+        updated_at: string; // ISO 8601
+        members: Member[];
+        transactions: Transaction[];
+      };
+
+      type Member = {
+        id: number;
+        full_name: string;
+        mobile_number: string;
+        email: string;
+        role: string;
+        created_at: string; // ISO 8601
+        updated_at: string; // ISO 8601
+      };
+
+      type Transaction = {
+        id: number;
+        title: string;
+        amount_cents: number;
+        transaction_type: string;
+        visibility_type: string;
+        transaction_date: string; // ISO 8601
+        note: string | null;
+        account_id: number;
+        transfer_account_id: number | null;
+        category_id: number | null;
+        currency_id: number;
+        user_id: number;
+        created_at: string; // ISO 8601
+        updated_at: string; // ISO 8601
+      };
+      ```
+    DESC
+    param :id, Integer, required: true, description: "Group ID"
+    error code: 401, desc: "Unauthorized — missing or invalid JWT"
+    error code: 404, desc: "Group not found or user is not a member"
+    returns code: 200, desc: "Success" do
+      param :success, :bool, desc: "Operation status"
+      param :group, Hash, desc: "Group data with members and transactions" do
+        param :id, Integer, desc: "Group ID"
+        param :name, String, desc: "Group name"
+        param :description, String, desc: "Group description"
+        param :created_by_id, Integer, desc: "ID of the user who created the group"
+        param :created_at, String, desc: "ISO 8601 creation timestamp"
+        param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        param :members, Array, desc: "List of group members" do
+          param :id, Integer, desc: "Member user ID"
+          param :full_name, String, desc: "Member full name"
+          param :mobile_number, String, desc: "Member mobile number"
+          param :email, String, desc: "Member email address"
+          param :role, String, desc: "Member role in the group (e.g. 'creator', 'member')"
+          param :created_at, String, desc: "ISO 8601 timestamp when the member was added to the group"
+          param :updated_at, String, desc: "ISO 8601 timestamp when the member's role was last updated"
+        end
+        param :transactions, Array, desc: "List of group transactions" do
+          param :id, Integer, desc: "Transaction ID"
+          param :title, String, desc: "Transaction title"
+          param :amount_cents, Integer, desc: "Amount in cents"
+          param :transaction_type, String, desc: "Type of transaction (expense, income, transfer, settlement)"
+          param :visibility_type, String, desc: "Visibility (personal or shared)"
+          param :transaction_date, String, desc: "ISO 8601 transaction date"
+          param :note, String, desc: "Optional note"
+          param :account_id, Integer, desc: "Source account ID"
+          param :transfer_account_id, Integer, desc: "Destination account ID (transfers only)"
+          param :category_id, Integer, desc: "Category ID"
+          param :currency_id, Integer, desc: "Currency ID"
+          param :user_id, Integer, desc: "Creator/payer user ID"
+          param :created_at, String, desc: "ISO 8601 creation timestamp"
+          param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        end
+      end
+    end
+    def show
+      Api::V0::Groups::Show.call(params.to_unsafe_h, current_user: current_user) do |result|
+        result.success { |data| render json: data, status: :ok }
+        result.failure(:not_found) { not_found_response }
+        result.failure { |errors| unprocessable_entity(errors) }
+      end
+    end
+
     api :POST, "/v0/groups", "Create a new group"
     description <<~DESC
       Creates a new group. The authenticated user becomes the creator and is automatically added as a member.
