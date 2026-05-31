@@ -38,6 +38,8 @@ class User < ApplicationRecord
   validates :mobile_number, presence: true, unless: -> { provider.present? }
   validates :mobile_number, uniqueness: true, allow_nil: true
 
+  # mobile device tokens for push notifications
+  has_many :device_tokens, dependent: :destroy
   has_many :accounts
   has_many :categories
   has_many :transactions

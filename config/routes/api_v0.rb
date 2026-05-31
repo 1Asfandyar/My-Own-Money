@@ -28,5 +28,6 @@ namespace :api do
     end
 
     resources :friendships
+    resources :device_tokens, only: [ :create, :destroy ]
   end
 end
