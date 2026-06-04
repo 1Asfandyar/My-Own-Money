@@ -117,5 +117,40 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(to_account.reload.current_balance_cents).to eq(0)
       end
     end
+
+    context "when deleting a settlement transaction" do
+      let(:user2)             { create(:user) }
+      let(:existing_debt)     { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
+      let(:settlement_transaction) do
+        existing_debt # ensure debt exists first
+        create(:transaction, :settlement,
+               user:         user,
+               settles_user: user2,
+               account:      account,
+               currency:     currency,
+               amount_cents: 1000,
+               title:        "Partial settle").tap do
+          # simulate what the service does: reduce the debt
+          existing_debt.reload.update!(amount_cents: 1000)
+        end
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{settlement_transaction.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/destroy_response")
+      end
+
+      it "removes the settlement transaction" do
+        expect(Transaction.find_by(id: settlement_transaction.id)).to be_nil
+      end
+
+      it "restores the debt that was settled" do
+        # debt was 1000 after settlement; destroying should add 1000 back → 2000
+        debt = Debt.find_by(from_user_id: user.id, to_user_id: user2.id)
+        expect(debt.amount_cents).to eq(2000)
+      end
+    end
   end
 end

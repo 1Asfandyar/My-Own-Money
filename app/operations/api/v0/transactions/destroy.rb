@@ -30,6 +30,8 @@ module Api::V0::Transactions
     def execute
       result = if transaction.transfer?
         Transaction::Transfer::Destroy.call(transaction: transaction)
+      elsif transaction.settlement?
+        Transaction::Settlement::Destroy.call(transaction: transaction)
       else
         Transaction::Personal::Destroy.call(transaction: transaction)
       end

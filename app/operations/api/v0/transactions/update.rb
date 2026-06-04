@@ -9,6 +9,7 @@ module Api::V0::Transactions
       @current_user = current_user
 
       yield find_transaction
+      return Failure(errors: { base: [ "settlement transactions cannot be updated" ] }) if transaction.settlement?
 
       if shared_expense?
         yield validate_split_method_change

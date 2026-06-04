@@ -20,6 +20,9 @@ module Api::V0::Contracts::Transactions
       optional(:shared_by).maybe(:array)   # equal split: array of user IDs
       optional(:user_shares).maybe(:array) # non-equal splits: array of { user_id:, share: }
       optional(:split_method).maybe(:string)
+
+      # settlement fields
+      optional(:settles_user_id).maybe(:integer)
     end
 
     rule(:transaction_type) do
@@ -47,7 +50,15 @@ module Api::V0::Contracts::Transactions
 
     rule(:category_id) do
       next if values[:transaction_type] == "transfer"
+      next if values[:transaction_type] == "settlement"
       key.failure("is required") if value.nil?
+    end
+
+    # --- settlement ---
+
+    rule(:settles_user_id) do
+      next unless values[:transaction_type] == "settlement"
+      key.failure("is required for settlement") if value.nil?
     end
 
     # --- transfer ---

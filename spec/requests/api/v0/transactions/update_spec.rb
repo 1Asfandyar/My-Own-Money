@@ -566,5 +566,28 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to match_json_schema("error_response")
       end
     end
+
+    # ── Settlement update restriction ─────────────────────────────────────────
+
+    context "when attempting to update a settlement transaction" do
+      let(:user2)               { create(:user) }
+      let(:settlement_txn) do
+        create(:transaction, :settlement,
+               user:         user,
+               settles_user: user2,
+               account:      account,
+               currency:     currency,
+               amount_cents: 1000,
+               title:        "Old settle")
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{settlement_txn.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { title: "New settle title" } }
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
   end
 end

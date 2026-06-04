@@ -25,6 +25,7 @@
         "account_id":          { "type": "integer" },
         "transfer_account_id": { "type": ["integer", "null"] },
         "category_id":         { "type": ["integer", "null"] },
+        "settles_user_id":     { "type": ["integer", "null"] },
         "category":            { "oneOf": [{ "$ref": "#/definitions/category" }, { "type": "null" }] },
         "currency_id":      { "type": "integer" },
         "user_id":          { "type": "integer" },

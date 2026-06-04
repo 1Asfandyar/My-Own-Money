@@ -16,6 +16,9 @@ module Api::V0::Transactions
         yield find_account_for_payer
         yield find_category_for_payer
         yield(equal_shared? ? find_shared_by_users : find_user_shares_users)
+      elsif settlement?
+        yield find_settles_user
+        yield find_account
       else
         yield find_account
         yield find_category
@@ -32,10 +35,14 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :account, :from_account, :to_account,
-                :category, :currency, :transaction, :paid_by_user, :shared_by_users
+                :category, :currency, :transaction, :paid_by_user, :shared_by_users, :settles_user
 
     def transfer?
       params[:transaction_type] == "transfer"
+    end
+
+    def settlement?
+      params[:transaction_type] == "settlement"
     end
 
     def shared_expense?
@@ -69,6 +76,13 @@ module Api::V0::Transactions
     def find_to_account
       @to_account = current_user.accounts.find_by(id: params[:to_account_id])
       @to_account ? Success() : Failure(:not_found)
+    end
+
+    # --- finders for settlement ---
+
+    def find_settles_user
+      @settles_user = User.find_by(id: params[:settles_user_id])
+      @settles_user ? Success() : Failure(:not_found)
     end
 
     # --- finders for shared expense ---
@@ -121,9 +135,25 @@ module Api::V0::Transactions
         persist_transfer
       elsif shared_expense?
         persist_shared_expense
+      elsif settlement?
+        persist_settlement
       else
         persist_personal
       end
+    end
+
+    def persist_settlement
+      result = Transaction::Settlement::Create.call(
+        settler:          current_user,
+        settles_user:     settles_user,
+        title:            params[:title],
+        amount_cents:     params[:amount_cents],
+        account:          account,
+        transaction_date: parse_date,
+        note:             params[:note],
+        currency:         currency
+      )
+      handle_service_result(result)
     end
 
     def persist_transfer
