@@ -1250,5 +1250,161 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to match_json_schema("error_response")
       end
     end
+
+    # ── Settlement ────────────────────────────────────────────────────────────
+
+    context "when creating a settlement (current user pays back user2)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
+      let(:request_params) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        existing_debt
+        {
+          title:            "Settling up with user2",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          account_id:       account.id,
+          settles_user_id:  user2.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("transactions/create_response")
+      end
+
+      it "persists the transaction as a settlement" do
+        t = Transaction.find_by(title: "Settling up with user2", user_id: user.id)
+        expect(t).to be_present
+        expect(t.transaction_type).to eq("settlement")
+        expect(t.visibility_type).to eq("shared")
+        expect(t.settles_user_id).to eq(user2.id)
+        expect(t.amount_cents).to eq(1000)
+      end
+
+      it "reduces the debt between the settler and settles_user" do
+        debt = Debt.find_by(from_user_id: user.id, to_user_id: user2.id)
+        expect(debt.amount_cents).to eq(1000) # 2000 - 1000
+      end
+
+      it "does not require a category_id" do
+        t = Transaction.find_by(title: "Settling up with user2", user_id: user.id)
+        expect(t.category_id).to be_nil
+      end
+
+      it "deducts the settlement amount from the settler's account" do
+        expect(account.reload.current_balance_cents).to eq(-1000)
+      end
+
+      it "credits the settlement amount to the settles_user's default account" do
+        expect(user2_account.reload.current_balance_cents).to eq(1000)
+      end
+    end
+
+    context "when the settlement fully clears the debt" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 1000) }
+      let(:request_params) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        existing_debt
+        {
+          title:            "Full settle",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          account_id:       account.id,
+          settles_user_id:  user2.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and sets the debt to zero" do
+        expect(response).to have_http_status(:created)
+        debt = Debt.find_by(from_user_id: user.id, to_user_id: user2.id)
+        expect(debt.amount_cents).to eq(0)
+      end
+    end
+
+    context "when the settlement amount exceeds the existing debt (over-payment)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 400) }
+      let(:request_params) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        existing_debt
+        {
+          title:            "Over settle",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          account_id:       account.id,
+          settles_user_id:  user2.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 201 and flips the debt direction" do
+        expect(response).to have_http_status(:created)
+        # original user → user2 = 400; after paying 1000, user2 now owes user 600
+        expect(Debt.find_by(from_user_id: user.id, to_user_id: user2.id)).to be_nil
+        debt = Debt.find_by(from_user_id: user2.id, to_user_id: user.id)
+        expect(debt.amount_cents).to eq(600)
+      end
+    end
+
+    context "when settles_user_id references a non-existent user" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Ghost settle",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          account_id:       account.id,
+          settles_user_id:  999_999,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 404" do
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "when settles_user_id is missing from a settlement" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "No settlee",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          account_id:       account.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when account_id is missing from a settlement" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "No account settle",
+          amount_cents:     1000,
+          transaction_type: "settlement",
+          settles_user_id:  user2.id,
+          transaction_date: transaction_date
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
   end
 end

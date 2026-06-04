@@ -8,19 +8,28 @@
 #  full_name              :string
 #  mobile_number          :string
 #  onboarding_completed   :boolean          default(FALSE), not null
+#  provider               :string
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
 #  reset_password_token   :string
 #  role                   :integer          default("user"), not null
+#  uid                    :string
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
+#  default_account_id     :bigint
 #
 # Indexes
 #
+#  index_users_on_default_account_id    (default_account_id)
 #  index_users_on_email                 (email) UNIQUE
 #  index_users_on_mobile_number         (mobile_number) UNIQUE WHERE (mobile_number IS NOT NULL)
+#  index_users_on_provider_and_uid      (provider,uid) UNIQUE
 #  index_users_on_reset_password_token  (reset_password_token) UNIQUE
 #  index_users_on_role                  (role)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (default_account_id => accounts.id)
 #
 class User < ApplicationRecord
   devise :database_authenticatable,
@@ -39,6 +48,7 @@ class User < ApplicationRecord
   validates :mobile_number, uniqueness: true, allow_nil: true
 
   has_many :accounts
+  belongs_to :default_account, class_name: "Account", foreign_key: :default_account_id, optional: true
   has_many :categories
   has_many :transactions
   has_many :transaction_splits

@@ -10,7 +10,11 @@ module Api::V0::Transactions
 
       yield find_transaction
 
-      if shared_expense?
+      if transaction.settlement?
+        yield find_account  if params.key?(:account_id)
+        yield find_currency if params.key?(:currency_id)
+        yield persist_settlement
+      elsif shared_expense?
         yield validate_split_method_change
         yield validate_exact_split_sum if exact_split_with_user_shares?
         yield find_paid_by_user        if params.key?(:paid_by)
@@ -189,6 +193,18 @@ module Api::V0::Transactions
     end
 
     # --- persistence ---
+
+    def persist_settlement
+      service_attrs = {}
+      service_attrs[:title]            = params[:title]                        if params.key?(:title)
+      service_attrs[:amount_cents]     = params[:amount_cents]                 if params.key?(:amount_cents)
+      service_attrs[:account]          = account                               if account
+      service_attrs[:transaction_date] = Time.parse(params[:transaction_date]) if params.key?(:transaction_date)
+      service_attrs[:note]             = params[:note]                         if params.key?(:note)
+      service_attrs[:currency]         = currency                              if currency
+
+      handle_service_result(Transaction::Settlement::Update.call(transaction: transaction, **service_attrs))
+    end
 
     def persist_shared
       service_args = {

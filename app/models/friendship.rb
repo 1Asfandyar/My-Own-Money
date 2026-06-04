@@ -1,3 +1,28 @@
+# == Schema Information
+#
+# Table name: friendships
+#
+#  id              :bigint           not null, primary key
+#  status          :integer          default("pending"), not null
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  requested_by_id :bigint           not null
+#  user_a_id       :bigint           not null
+#  user_b_id       :bigint           not null
+#
+# Indexes
+#
+#  index_friendships_on_requested_by_id          (requested_by_id)
+#  index_friendships_on_user_a_id                (user_a_id)
+#  index_friendships_on_user_a_id_and_user_b_id  (user_a_id,user_b_id) UNIQUE
+#  index_friendships_on_user_b_id                (user_b_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (requested_by_id => users.id)
+#  fk_rails_...  (user_a_id => users.id)
+#  fk_rails_...  (user_b_id => users.id)
+#
 class Friendship < ApplicationRecord
   enum :status, { pending: 0, accepted: 1, blocked: 2 }
 

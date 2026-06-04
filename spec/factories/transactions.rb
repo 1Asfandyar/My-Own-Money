@@ -18,5 +18,11 @@ FactoryBot.define do
       visibility_type { :shared }
       association :group
     end
+
+    trait :settlement do
+      transaction_type { :settlement }
+      visibility_type  { :shared }
+      association :settles_user, factory: :user
+    end
   end
 end

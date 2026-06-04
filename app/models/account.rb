@@ -2,15 +2,15 @@
 #
 # Table name: accounts
 #
-#  id              :bigint           not null, primary key
+#  id                    :bigint           not null, primary key
 #  current_balance_cents :integer          default(0), not null
 #  initial_balance_cents :integer          default(0), not null
-#  is_archived     :boolean          default(FALSE), not null
-#  name            :string           not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  currency_id     :bigint           not null
-#  user_id         :bigint           not null
+#  is_archived           :boolean          default(FALSE), not null
+#  name                  :string           not null
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  currency_id           :bigint           not null
+#  user_id               :bigint           not null
 #
 # Indexes
 #

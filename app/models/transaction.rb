@@ -15,6 +15,7 @@
 #  category_id         :bigint
 #  currency_id         :bigint           not null
 #  group_id            :bigint
+#  settles_user_id     :bigint
 #  transfer_account_id :bigint
 #  user_id             :bigint           not null
 #
@@ -24,6 +25,7 @@
 #  index_transactions_on_category_id       (category_id)
 #  index_transactions_on_currency_id       (currency_id)
 #  index_transactions_on_group_id          (group_id)
+#  index_transactions_on_settles_user_id   (settles_user_id)
 #  index_transactions_on_transaction_date  (transaction_date)
 #  index_transactions_on_transaction_type  (transaction_type)
 #  index_transactions_on_user_id           (user_id)
@@ -34,6 +36,7 @@
 #  fk_rails_...  (category_id => categories.id)
 #  fk_rails_...  (currency_id => currencies.id)
 #  fk_rails_...  (group_id => groups.id)
+#  fk_rails_...  (settles_user_id => users.id)
 #  fk_rails_...  (transfer_account_id => accounts.id)
 #  fk_rails_...  (user_id => users.id)
 #
@@ -55,6 +58,7 @@ class Transaction < ApplicationRecord
   belongs_to :currency
   belongs_to :group,            optional: true
   belongs_to :transfer_account, class_name: "Account", optional: true
+  belongs_to :settles_user,    class_name: "User",    optional: true
   has_many   :transaction_splits, dependent: :destroy
 
   private

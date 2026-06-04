@@ -10,6 +10,7 @@ module Api::V0
     description <<~DESC
       Returns all transactions belonging to the authenticated user, ordered by transaction date descending.
       Supports optional filtering by account, category, date range, and keyword search.
+      Includes settlement transactions — use `transaction_type == "settlement"` to identify them.
 
       **TypeScript Types**
 
@@ -33,13 +34,14 @@ module Api::V0
         id: number;
         title: string;
         amount_cents: number;
-        transaction_type: "income" | "expense" | "transfer";
+        transaction_type: "income" | "expense" | "transfer" | "settlement";
         visibility_type: string;
         transaction_date: string; // ISO 8601
         note: string | null;
-        account_id: number | null;
+        account_id: number;
         transfer_account_id: number | null;
         category_id: number | null;
+        settles_user_id: number | null;   // set for settlement transactions
         category: Category | null;
         currency_id: number;
         user_id: number;
@@ -79,8 +81,9 @@ module Api::V0
         param :note, String, desc: "Optional note"
         param :account_id, Integer, desc: "Account ID (nil for transfers)"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
-        param :category_id, Integer, desc: "Category ID (nil for transfers)"
-        param :category, Hash, desc: "Category data (nil for transfers)"
+        param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
+        param :settles_user_id, Integer, desc: "User ID of the person being paid back (nil unless settlement)"
+        param :category, Hash, desc: "Category data (nil for transfers/settlements)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -115,13 +118,14 @@ module Api::V0
         id: number;
         title: string;
         amount_cents: number;
-        transaction_type: "income" | "expense" | "transfer";
+        transaction_type: "income" | "expense" | "transfer" | "settlement";
         visibility_type: string;
         transaction_date: string; // ISO 8601
         note: string | null;
-        account_id: number | null;
+        account_id: number;
         transfer_account_id: number | null;
         category_id: number | null;
+        settles_user_id: number | null;   // set for settlement transactions
         currency_id: number;
         user_id: number;
         created_at: string; // ISO 8601
@@ -139,13 +143,14 @@ module Api::V0
         param :id, Integer, desc: "Transaction ID"
         param :title, String, desc: "Transaction title"
         param :amount_cents, Integer, desc: "Amount in cents"
-        param :transaction_type, String, desc: "One of: income, expense, transfer"
+        param :transaction_type, String, desc: "One of: income, expense, transfer, settlement"
         param :visibility_type, String, desc: "Visibility type"
         param :transaction_date, String, desc: "ISO 8601 transaction date"
         param :note, String, desc: "Optional note"
-        param :account_id, Integer, desc: "Account ID (nil for transfers)"
+        param :account_id, Integer, desc: "Account ID"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
-        param :category_id, Integer, desc: "Category ID (nil for transfers)"
+        param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
+        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -172,6 +177,11 @@ module Api::V0
         - `user_shares` (array of `{user_id, share_amount_cents}`) when `split_method` is `"exact"` — amounts are explicit.
         - `account_id` and `category_id` must belong to the `paid_by` user.
         - `transaction_date` defaults to today if omitted.
+      For **settlement** transactions: provide `account_id` and `settles_user_id` (the user being paid back).
+        - Records that the current user paid back `settles_user_id` the given `amount_cents`.
+        - Reduces the debt between the current user and `settles_user_id` by `amount_cents`.
+        - `category_id` is not required for settlements.
+        - Settlement transactions cannot be updated — delete and re-create if correction is needed.
 
       **TypeScript Types**
 
@@ -179,7 +189,7 @@ module Api::V0
       // Input
       type Body = {
         title: string;
-        transaction_type: "income" | "expense" | "transfer";
+        transaction_type: "income" | "expense" | "transfer" | "settlement";
         amount_cents: number;             // must be > 0
         transaction_date?: string;        // ISO 8601; defaults to today
         note?: string;
@@ -205,6 +215,9 @@ module Api::V0
                                           //   shares:     relative share count
         }>;
         split_method?: "equal" | "exact" | "percentage" | "shares"; // required when shared_by or user_shares present
+
+        // for settlement
+        settles_user_id?: number;         // required for settlement — the user being paid back
       };
 
       // Output
@@ -215,22 +228,23 @@ module Api::V0
       ```
     DESC
     param :title, String, required: true, desc: "Transaction title"
-    param :transaction_type, String, required: true, desc: "One of: income, expense, transfer"
+    param :transaction_type, String, required: true, desc: "One of: income, expense, transfer, settlement"
     param :amount_cents, Integer, required: true, desc: "Amount in cents (must be > 0)"
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date (defaults to today)"
     param :note, String, required: false, desc: "Optional note"
     param :currency_id, Integer, required: false, desc: "Currency ID (defaults to account currency)"
-    param :account_id, Integer, required: false, desc: "Account ID (required for income/expense; must belong to paid_by for shared)"
-    param :category_id, Integer, required: false, desc: "Category ID (required for income/expense; must belong to paid_by for shared)"
+    param :account_id, Integer, required: false, desc: "Account ID (required for income/expense/settlement; must belong to paid_by for shared)"
+    param :category_id, Integer, required: false, desc: "Category ID (required for income/expense; must belong to paid_by for shared; not required for settlement)"
     param :from_account_id, Integer, required: false, desc: "Source account ID (required for transfer)"
     param :to_account_id, Integer, required: false, desc: "Destination account ID (required for transfer)"
     param :paid_by, Integer, required: false, desc: "User ID of who paid (required for shared expense)"
     param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for split_method equal)"
     param :user_shares, Array, required: false, desc: "Array of {user_id, share} objects (required for split_method exact, percentage, or shares)"
     param :split_method, String, required: false, desc: "Split method: equal, exact, percentage, shares (required when shared_by or user_shares present)"
+    param :settles_user_id, Integer, required: false, desc: "User ID of the person being paid back (required for settlement)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
-    error code: 404, desc: "Account, category, or currency not found"
+    error code: 404, desc: "Account, category, currency, or settles_user not found"
     error code: 422, desc: "Validation errors"
     returns code: 201, desc: "Transaction created" do
       param :success, :bool, desc: "Operation status"
@@ -238,13 +252,14 @@ module Api::V0
         param :id, Integer, desc: "Transaction ID"
         param :title, String, desc: "Transaction title"
         param :amount_cents, Integer, desc: "Amount in cents"
-        param :transaction_type, String, desc: "One of: income, expense, transfer"
+        param :transaction_type, String, desc: "One of: income, expense, transfer, settlement"
         param :visibility_type, String, desc: "Visibility type"
         param :transaction_date, String, desc: "ISO 8601 transaction date"
         param :note, String, desc: "Optional note"
-        param :account_id, Integer, desc: "Account ID (nil for transfers)"
+        param :account_id, Integer, desc: "Account ID"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
-        param :category_id, Integer, desc: "Category ID (nil for transfers)"
+        param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
+        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -267,6 +282,10 @@ module Api::V0
       For transfers, updating `from_account_id` or `to_account_id` changes the linked accounts.
       Changing `transaction_type` between personal and transfer types is supported.
 
+      **Settlement transactions** support updating `title`, `amount_cents`, `account_id`,
+      `transaction_date`, `note`, and `currency_id`. Changing `transaction_type` or
+      `settles_user_id` on a settlement is not supported.
+
       **TypeScript Types**
 
       ```typescript
@@ -274,7 +293,7 @@ module Api::V0
       type Params = { id: number };
       type Body = {
         title?: string;
-        transaction_type?: "income" | "expense" | "transfer";
+        transaction_type?: "income" | "expense" | "transfer"; // ignored for settlements
         amount_cents?: number;       // must be > 0
         transaction_date?: string;   // ISO 8601
         note?: string | null;
@@ -294,7 +313,7 @@ module Api::V0
     DESC
     param :id, Integer, required: true, desc: "Transaction ID"
     param :title, String, required: false, desc: "Transaction title"
-    param :transaction_type, String, required: false, desc: "One of: income, expense, transfer"
+    param :transaction_type, String, required: false, desc: "One of: income, expense, transfer (settlement cannot be updated)"
     param :amount_cents, Integer, required: false, desc: "Amount in cents (must be > 0)"
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date"
     param :note, String, required: false, desc: "Optional note (pass null to clear)"
@@ -316,9 +335,10 @@ module Api::V0
         param :visibility_type, String, desc: "Visibility type"
         param :transaction_date, String, desc: "ISO 8601 transaction date"
         param :note, String, desc: "Optional note"
-        param :account_id, Integer, desc: "Account ID (nil for transfers)"
+        param :account_id, Integer, desc: "Account ID"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers)"
+        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"

@@ -566,5 +566,61 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to match_json_schema("error_response")
       end
     end
+
+    # ── Settlement transaction updates ────────────────────────────────────────
+
+    context "when updating a settlement transaction's title" do
+      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:settlement_txn) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        create(:transaction, :settlement,
+               user:         user,
+               settles_user: user2,
+               account:      account,
+               currency:     currency,
+               amount_cents: 1000,
+               title:        "Old settle")
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{settlement_txn.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { title: "New settle title" } }
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/update_response")
+      end
+
+      it "persists the updated title" do
+        expect(settlement_txn.reload.title).to eq("New settle title")
+      end
+    end
+
+    context "when updating a settlement transaction's amount_cents" do
+      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:settlement_txn) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        create(:transaction, :settlement,
+               user:         user,
+               settles_user: user2,
+               account:      account,
+               currency:     currency,
+               amount_cents: 1000,
+               title:        "Old settle").tap do
+          account.update!(current_balance_cents: -1000)
+          user2_account.update!(current_balance_cents: 1000)
+        end
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{settlement_txn.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { amount_cents: 2000 } }
+
+      it "returns 200 and adjusts account balances for the new amount" do
+        expect(response).to have_http_status(:ok)
+        # account was -1000: revert (+1000 → 0) then apply (-2000 → -2000)
+        expect(account.reload.current_balance_cents).to eq(-2000)
+        # user2_account was +1000: revert (-1000 → 0) then apply (+2000 → +2000)
+        expect(user2_account.reload.current_balance_cents).to eq(2000)
+      end
+    end
   end
 end
