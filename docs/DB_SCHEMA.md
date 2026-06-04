@@ -29,20 +29,22 @@ enum kind: { custom: 0, friends: 1 }
 ## Tables
 
 ### users
-| Column          | Type      | Null  | Notes              |
-|-----------------|-----------|-------|--------------------|
-| id              | bigint    | false | PK                 |
-| full_name       | string    | false |                    |
-| email           | string    | false | unique             |
-| password_digest | string    | false | has_secure_password|
-| created_at      | datetime  | false |                    |
-| updated_at      | datetime  | false |                    |
+| Column             | Type      | Null  | Notes                                  |
+|--------------------|-----------|-------|----------------------------------------|
+| id                 | bigint    | false | PK                                     |
+| full_name          | string    | false |                                        |
+| email              | string    | false | unique                                 |
+| password_digest    | string    | false | has_secure_password                    |
+| default_account_id | bigint    | true  | FK → accounts; used for settlements    |
+| created_at         | datetime  | false |                                        |
+| updated_at         | datetime  | false |                                        |
 
 ```ruby
 validates :full_name, presence: true
 validates :email, presence: true, uniqueness: true
 
 has_many :accounts
+belongs_to :default_account, class_name: 'Account', foreign_key: :default_account_id, optional: true
 has_many :transactions
 has_many :transaction_splits
 has_many :groups_users
@@ -52,6 +54,8 @@ has_one  :friends_group, -> { friends }, class_name: 'Group', foreign_key: :crea
 has_many :debts_from, class_name: 'Debt', foreign_key: :from_user_id
 has_many :debts_to,   class_name: 'Debt', foreign_key: :to_user_id
 ```
+
+> `default_account_id` is used by the settlement service to credit the recipient's account when a settlement is recorded. Must be set on any user expected to receive settlements.
 
 ---
 

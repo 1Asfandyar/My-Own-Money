@@ -119,10 +119,12 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when deleting a settlement transaction" do
-      let(:user2)             { create(:user) }
-      let(:existing_debt)     { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
+      let(:user2)         { create(:user) }
+      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:existing_debt) { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
       let(:settlement_transaction) do
-        existing_debt # ensure debt exists first
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        existing_debt
         create(:transaction, :settlement,
                user:         user,
                settles_user: user2,
@@ -130,8 +132,10 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                currency:     currency,
                amount_cents: 1000,
                title:        "Partial settle").tap do
-          # simulate what the service does: reduce the debt
+          # simulate what the service does on create: reduce debt, debit settler, credit settles_user
           existing_debt.reload.update!(amount_cents: 1000)
+          account.update!(current_balance_cents: -1000)
+          user2_account.reload.update!(current_balance_cents: 1000)
         end
       end
       let(:endpoint)        { "/api/v0/transactions/#{settlement_transaction.id}" }
@@ -150,6 +154,16 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         # debt was 1000 after settlement; destroying should add 1000 back → 2000
         debt = Debt.find_by(from_user_id: user.id, to_user_id: user2.id)
         expect(debt.amount_cents).to eq(2000)
+      end
+
+      it "reverts the settler's account balance" do
+        # account was -1000 after settlement; revert expense (+1000) → 0
+        expect(account.reload.current_balance_cents).to eq(0)
+      end
+
+      it "reverts the settles_user's default account balance" do
+        # user2_account was +1000 after settlement; revert income (-1000) → 0
+        expect(user2_account.reload.current_balance_cents).to eq(0)
       end
     end
   end

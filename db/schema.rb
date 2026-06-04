@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_04_053441) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_04_110059) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -232,6 +232,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_053441) do
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.bigint "default_account_id"
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "full_name"
@@ -244,6 +245,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_053441) do
     t.integer "role", default: 0, null: false
     t.string "uid"
     t.datetime "updated_at", null: false
+    t.index ["default_account_id"], name: "index_users_on_default_account_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["mobile_number"], name: "index_users_on_mobile_number", unique: true, where: "(mobile_number IS NOT NULL)"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
@@ -272,4 +274,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_053441) do
   add_foreign_key "transactions", "groups"
   add_foreign_key "transactions", "users"
   add_foreign_key "transactions", "users", column: "settles_user_id"
+  add_foreign_key "users", "accounts", column: "default_account_id"
 end

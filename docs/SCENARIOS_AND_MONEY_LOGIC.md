@@ -11,13 +11,13 @@
 
 ## Transaction Types & When to Use Each
 
-| Type       | visibility_type | Has splits? | Updates debts? |
-|------------|-----------------|-------------|----------------|
-| expense    | personal        | no          | no             |
-| expense    | shared          | yes         | yes            |
-| income     | personal        | no          | no             |
-| transfer   | personal        | no          | no             |
-| settlement | personal        | no          | yes (reduces)  |
+| Type       | visibility_type | Has splits? | Updates debts? | Updates account balance?            |
+|------------|-----------------|-------------|----------------|-------------------------------------|
+| expense    | personal        | no          | no             | yes (deducts from account)          |
+| expense    | shared          | yes         | yes            | yes (deducts full amount from payer)|
+| income     | personal        | no          | no             | yes (adds to account)               |
+| transfer   | personal        | no          | no             | yes (deducts from → credits to)     |
+| settlement | shared          | no          | yes (reduces)  | yes (see Settlement Account Changes)|
 
 ---
 
@@ -99,7 +99,11 @@ Net: Ahmed → Ali = 300   (direction flipped, old row updated/replaced)
 Ali pays Ahmed 1000 back.
 
 ```
-transaction: { type: settlement, user_id: Ali, amount: 1000 }
+transaction: { type: settlement, visibility: shared, user_id: Ali, amount: 1000 }
+
+Account balance updates:
+  Ali's account (settler):              -1000  (recorded as expense)
+  Ahmed's default_account (settles_user): +1000  (recorded as income)
 
 Debt update:
   Find debt where from_user=Ali, to_user=Ahmed
@@ -107,6 +111,18 @@ Debt update:
   if amount == 0 → delete row
   if amount < 0  → flip direction, save absolute value
 ```
+
+### Settlement Account Changes
+
+- **Settler** (the payer/debtor): settlement is treated as an **expense** — `account.current_balance_cents -= amount_cents`. The account used is the one passed via `account_id`, which falls back to `settler.default_account`.
+- **Settles-user** (the creditor being paid back): settlement is treated as **income** — `settles_user.default_account.current_balance_cents += amount_cents`. The settles-user must have a `default_account` set on their profile.
+
+### Settlement Deletion
+
+Reversing a settlement undoes all three effects in one transaction:
+1. Revert settler's account balance (`+amount_cents`, reversing the expense)
+2. Revert settles_user's default_account balance (`-amount_cents`, reversing the income)
+3. Restore the debt (add `amount_cents` back between the pair)
 
 ---
 

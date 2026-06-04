@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Transaction::Settlement::Create < ApplicationService
+  include Transaction::Helpers
+
   # settler:      User who is paying (the debtor)
   # settles_user: User being paid (the creditor)
   def call(settler:, settles_user:, title:, amount_cents:, account:, transaction_date:,
@@ -29,14 +31,22 @@ class Transaction::Settlement::Create < ApplicationService
         user:             settler,
         settles_user:     settles_user,
         transaction_type: :settlement,
-        visibility_type:  :personal,
+        visibility_type:  :shared,
         title:            title,
         amount_cents:     amount_cents,
-        account:          account,
+        account:          settler_default_account,
         transaction_date: transaction_date,
         note:             note,
         currency:         currency || account.currency
       )
+
+      # for Payer (settler), settlement is an expense → balance decreases
+      # reduce the balance of payer's account by the settlement amount
+      # for now there is no category for settlement
+      update_account_balance(account: settler_default_account, transaction_type: :expense, amount_cents: amount_cents)
+
+      # for Debtor (settles_user), settlement is an income → balance increases
+      update_account_balance(account: settles_user.default_account, transaction_type: :income, amount_cents: amount_cents)
 
       # Reduce the debt: settler owes settles_user some amount.
       # Calling with debtor=settles_user and payer=settler triggers adjust_reverse_debt
@@ -55,5 +65,9 @@ class Transaction::Settlement::Create < ApplicationService
     Success(transaction)
   rescue ActiveRecord::RecordInvalid => e
     Failure(errors: e.record.errors.to_hash)
+  end
+
+  def settler_default_account
+    @settler_default_account ||= @account || settler.default_account
   end
 end

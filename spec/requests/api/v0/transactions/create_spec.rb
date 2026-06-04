@@ -1255,9 +1255,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when creating a settlement (current user pays back user2)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
       let(:request_params) do
-        existing_debt # ensure debt exists before request
+        user2_account.tap { user2.update!(default_account: user2_account) }
+        existing_debt
         {
           title:            "Settling up with user2",
           amount_cents:     1000,
@@ -1277,7 +1279,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         t = Transaction.find_by(title: "Settling up with user2", user_id: user.id)
         expect(t).to be_present
         expect(t.transaction_type).to eq("settlement")
-        expect(t.visibility_type).to eq("personal")
+        expect(t.visibility_type).to eq("shared")
         expect(t.settles_user_id).to eq(user2.id)
         expect(t.amount_cents).to eq(1000)
       end
@@ -1291,12 +1293,22 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         t = Transaction.find_by(title: "Settling up with user2", user_id: user.id)
         expect(t.category_id).to be_nil
       end
+
+      it "deducts the settlement amount from the settler's account" do
+        expect(account.reload.current_balance_cents).to eq(-1000)
+      end
+
+      it "credits the settlement amount to the settles_user's default account" do
+        expect(user2_account.reload.current_balance_cents).to eq(1000)
+      end
     end
 
     context "when the settlement fully clears the debt" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 1000) }
       let(:request_params) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
         existing_debt
         {
           title:            "Full settle",
@@ -1317,8 +1329,10 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when the settlement amount exceeds the existing debt (over-payment)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:user2_account)   { create(:account, user: user2, currency: currency) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 400) }
       let(:request_params) do
+        user2_account.tap { user2.update!(default_account: user2_account) }
         existing_debt
         {
           title:            "Over settle",

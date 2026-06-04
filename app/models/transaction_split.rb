@@ -2,14 +2,14 @@
 #
 # Table name: transaction_splits
 #
-#  id               :bigint           not null, primary key
+#  id                :bigint           not null, primary key
 #  allocation_value  :decimal(15, 4)
 #  owed_amount_cents :integer          not null
-#  split_method     :integer          not null
-#  created_at       :datetime         not null
-#  updated_at       :datetime         not null
-#  transaction_id   :bigint           not null
-#  user_id          :bigint           not null
+#  split_method      :integer          not null
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  transaction_id    :bigint           not null
+#  user_id           :bigint           not null
 #
 # Indexes
 #

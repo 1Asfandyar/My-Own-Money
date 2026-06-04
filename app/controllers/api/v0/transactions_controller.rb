@@ -282,8 +282,9 @@ module Api::V0
       For transfers, updating `from_account_id` or `to_account_id` changes the linked accounts.
       Changing `transaction_type` between personal and transfer types is supported.
 
-      **Settlement transactions cannot be updated.** Attempting to PATCH a settlement returns 422.
-      To correct a settlement, delete it and create a new one.
+      **Settlement transactions** support updating `title`, `amount_cents`, `account_id`,
+      `transaction_date`, `note`, and `currency_id`. Changing `transaction_type` or
+      `settles_user_id` on a settlement is not supported.
 
       **TypeScript Types**
 
@@ -292,7 +293,7 @@ module Api::V0
       type Params = { id: number };
       type Body = {
         title?: string;
-        transaction_type?: "income" | "expense" | "transfer";
+        transaction_type?: "income" | "expense" | "transfer"; // ignored for settlements
         amount_cents?: number;       // must be > 0
         transaction_date?: string;   // ISO 8601
         note?: string | null;
@@ -323,7 +324,7 @@ module Api::V0
     param :to_account_id, Integer, required: false, desc: "Destination account ID (for transfer)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 404, desc: "Transaction, account, category, or currency not found"
-    error code: 422, desc: "Validation errors — also returned when attempting to update a settlement"
+    error code: 422, desc: "Validation errors"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
       param :transaction, Hash, desc: "Updated transaction data" do

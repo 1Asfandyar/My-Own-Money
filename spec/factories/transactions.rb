@@ -21,7 +21,7 @@ FactoryBot.define do
 
     trait :settlement do
       transaction_type { :settlement }
-      visibility_type  { :personal }
+      visibility_type  { :shared }
       association :settles_user, factory: :user
     end
   end
