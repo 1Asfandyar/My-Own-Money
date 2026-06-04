@@ -16,7 +16,7 @@ module Api::V0
       friend_id       = friendship.user_a_id == current_user_id ? friendship.user_b_id : friendship.user_a_id
       debt            = debt_map[friend_id]
 
-      if debt.nil?
+      if debt.nil? || debt.amount_cents.zero?
         { type: "settled_up", amount_cents: 0 }
       elsif debt.from_user_id == current_user_id
         { type: "you_owe", amount_cents: debt.amount_cents }
