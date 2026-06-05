@@ -32,6 +32,9 @@ vendor/bundle/
 !/tmp/storage/
 !/tmp/storage/.keep
 
+# Docker runtime data
+/dev/data/
+
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
