@@ -56,7 +56,16 @@ module Api::V0::Transactions
     end
 
     def filtered_transactions
-      apply_filters(current_user.transactions.includes(:category)).order(transaction_date: :desc)
+      scope = Transaction
+        .left_joins(:transaction_splits)
+        .where(
+          "transactions.user_id = :uid OR transaction_splits.user_id = :uid OR transactions.settles_user_id = :uid",
+          uid: current_user.id
+        )
+        .distinct
+        .includes(:category)
+
+      apply_filters(scope).order(transaction_date: :desc)
     end
 
     def apply_filters(scope)

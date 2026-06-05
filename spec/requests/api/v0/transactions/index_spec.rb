@@ -22,16 +22,15 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when authenticated with no filters" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:other_user) { create(:user) }
+      let(:other_account) { create(:account, user: other_user, currency: currency) }
 
       before do
-        other_user = create(:user)
         create(:transaction, user: user, account: account, currency: currency, category: category,
                title: "Groceries", transaction_date: 2.days.ago)
         create(:transaction, user: user, account: account, currency: currency, category: category,
                title: "Rent", transaction_date: 1.day.ago)
-        create(:transaction, user: other_user,
-               account: create(:account, user: other_user, currency: currency),
-               currency: currency)
+        create(:transaction, user: other_user, account: other_account, currency: currency)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -40,9 +39,79 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to match_json_schema("transactions/index_response")
       end
 
-      it "returns only the current user's transactions" do
-        ids = JSON.parse(response.body)["transactions"].map { |t| t["user_id"] }.uniq
-        expect(ids).to eq([ user.id ])
+      it "excludes transactions the current user has no involvement in" do
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Groceries", "Rent")
+        expect(titles.size).to eq(2)
+      end
+    end
+
+    context "when another user created a shared expense with current user in the splits" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:other_user) { create(:user) }
+      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:group) { create(:group) }
+
+      before do
+        shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
+                             currency: currency, title: "Shared Dinner", group: group)
+        create(:transaction_split, financial_transaction: shared_txn, user: user,
+               split_method: :equal, owed_amount_cents: 500)
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns the shared transaction" do
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Shared Dinner")
+      end
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+      end
+    end
+
+    context "when another user created a settlement targeting current user" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:other_user) { create(:user) }
+      let(:other_account) { create(:account, user: other_user, currency: currency) }
+
+      before do
+        create(:transaction, :settlement, user: other_user, account: other_account,
+               currency: currency, title: "Debt Repayment", settles_user: user)
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns the settlement transaction" do
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Debt Repayment")
+      end
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+      end
+    end
+
+    context "when a shared expense has multiple splits for current user (deduplication)" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:other_user) { create(:user) }
+      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:group) { create(:group) }
+
+      before do
+        shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
+                             currency: currency, title: "Group Trip", group: group)
+        create(:transaction_split, financial_transaction: shared_txn, user: user,
+               split_method: :equal, owed_amount_cents: 300)
+        create(:transaction_split, financial_transaction: shared_txn, user: other_user,
+               split_method: :equal, owed_amount_cents: 300)
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns the transaction only once" do
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles.count("Group Trip")).to eq(1)
       end
     end
 
