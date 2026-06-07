@@ -62,6 +62,7 @@ end
 
 group :development do
   gem "web-console"
+  gem "kamal", require: false                  # deployment via Docker + Kamal 2
   gem "rubocop-rails-omakase", require: false  # Omakase Rails style guide
   gem "annotaterb"                             # schema annotations on models
 end
