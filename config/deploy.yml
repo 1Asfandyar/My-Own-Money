@@ -26,14 +26,10 @@ servers:
     # - 1.2.3.5
     # - 1.2.3.6
 
-  # Uncomment if you add Solid Queue for background jobs:
-  # job:
-  #   hosts:
-  #     - <your.server.ip>
-  #   cmd: bin/rails solid_queue:start
-  #   env:
-  #     clear:
-  #       RAILS_MAX_THREADS: "5"
+  job:
+    hosts:
+      - <your.server.ip>
+    cmd: bin/jobs start
 
 # ── Container registry ────────────────────────────────────────────────────────
 # GitHub Container Registry (ghcr.io) is free for public repos.
@@ -54,12 +50,14 @@ env:
     WEB_CONCURRENCY: "2"               # Puma workers (set to CPU count)
     RAILS_MAX_THREADS: "3"             # Puma threads per worker
     RAILS_LOG_LEVEL: "info"
+    CORS_ALLOWED_ORIGINS: "https://<yourdomain.com>"   # update to match your frontend domain(s)
 
   secret:
     # Resolved from .kamal/secrets at deploy time — never committed
     - RAILS_MASTER_KEY               # config/master.key content
     - DATABASE_URL                   # postgres://user:pass@host/mom_production
-    - HOPIN_DATABASE_PASSWORD
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
 
 # ── kamal-proxy (replaces Nginx for most setups) ──────────────────────────────
 # Kamal 2 ships with kamal-proxy which:
@@ -103,7 +101,7 @@ builder:
 # Kamal creates, starts, and stops these containers automatically.
 accessories:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     host: <your.server.ip>
     port: "127.0.0.1:5432:5432"   # bind to localhost only — never expose DB publicly
     env:
@@ -113,7 +111,7 @@ accessories:
         - POSTGRES_USER
         - POSTGRES_PASSWORD
     volumes:
-      - mom_postgres:/var/lib/postgresql/data
+      - mom_postgres:/var/lib/postgresql
     options:
       restart: always
       shm-size: 256m              # prevents shared memory errors under load
