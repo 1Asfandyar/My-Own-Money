@@ -16,7 +16,6 @@ module Api::V0::Contracts::Transactions
       optional(:currency_id).maybe(:integer)
 
       # shared expense fields
-      optional(:paid_by).maybe(:integer)
       optional(:shared_by).maybe(:array)   # equal split: array of user IDs
       optional(:user_shares).maybe(:array) # non-equal splits: array of { user_id:, share: }
       optional(:split_method).maybe(:string)
@@ -138,14 +137,7 @@ module Api::V0::Contracts::Transactions
       end
     end
 
-    # --- paid_by and split_method: required for any shared expense ---
-
-    rule(:paid_by) do
-      is_shared = values[:transaction_type] == "expense" &&
-                  (values[:shared_by]&.any? || values[:user_shares]&.any?)
-      next unless is_shared
-      key.failure("is required for shared expense") if value.nil?
-    end
+    # --- split_method: required for any shared expense ---
 
     rule(:split_method) do
       is_shared = values[:transaction_type] == "expense" &&

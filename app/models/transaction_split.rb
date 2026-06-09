@@ -8,16 +8,19 @@
 #  split_method      :integer          not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
+#  category_id       :bigint
 #  transaction_id    :bigint           not null
 #  user_id           :bigint           not null
 #
 # Indexes
 #
+#  index_transaction_splits_on_category_id     (category_id)
 #  index_transaction_splits_on_transaction_id  (transaction_id)
 #  index_transaction_splits_on_user_id         (user_id)
 #
 # Foreign Keys
 #
+#  fk_rails_...  (category_id => categories.id)
 #  fk_rails_...  (transaction_id => transactions.id)
 #  fk_rails_...  (user_id => users.id)
 #
@@ -31,6 +34,7 @@ class TransactionSplit < ApplicationRecord
 
   belongs_to :financial_transaction, class_name: "Transaction", foreign_key: :transaction_id
   belongs_to :user
+  belongs_to :category, optional: true
 
   private
 

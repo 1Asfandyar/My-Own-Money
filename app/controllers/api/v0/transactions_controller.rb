@@ -168,17 +168,18 @@ module Api::V0
 
     api :POST, "/v0/transactions", "Create a new transaction"
     description <<~DESC
-      Creates a new transaction for the authenticated user.
+      Creates a new transaction for the authenticated user. The current user is always the payer / creator.
 
-      For **income** or **expense** transactions: provide `account_id` and `category_id`.
+      For **income** or **expense** transactions: provide `account_id` and `category_id` (both required).
       For **transfer** transactions: provide `from_account_id` and `to_account_id` instead.
-      For **shared expense** transactions: also provide `paid_by`, `split_method`, and one of:
+      For **shared expense** transactions: provide `account_id`, `category_id`, `split_method`, and one of:
         - `shared_by` (array of user IDs) when `split_method` is `"equal"` — amounts are divided evenly.
-        - `user_shares` (array of `{user_id, share_amount_cents}`) when `split_method` is `"exact"` — amounts are explicit.
-        - `account_id` and `category_id` must belong to the `paid_by` user.
+        - `user_shares` (array of `{user_id, share}`) for `"exact"`, `"percentage"`, or `"shares"` splits.
+        - `account_id` and `category_id` must belong to the current user.
+        - The current user's category balance is updated by their own share amount.
         - `transaction_date` defaults to today if omitted.
       For **settlement** transactions: provide `account_id` and `settles_user_id` (the user being paid back).
-        - Records that the current user paid back `settles_user_id` the given `amount_cents`.
+        - Records that the current user paid `settles_user_id` the given `amount_cents`.
         - Reduces the debt between the current user and `settles_user_id` by `amount_cents`.
         - `category_id` is not required for settlements.
         - Settlement transactions cannot be updated — delete and re-create if correction is needed.
@@ -195,7 +196,7 @@ module Api::V0
         note?: string;
         currency_id?: number;
 
-        // for income / expense
+        // for income / expense (both required)
         account_id?: number;
         category_id?: number;
 
@@ -204,7 +205,6 @@ module Api::V0
         to_account_id?: number;
 
         // for shared expense — equal split
-        paid_by?: number;                 // user ID of who paid; required for any shared expense
         shared_by?: number[];             // user IDs sharing the expense (required for split_method "equal")
         // for shared expense — non-equal splits
         user_shares?: Array<{             // required for split_method "exact" | "percentage" | "shares"
@@ -216,7 +216,7 @@ module Api::V0
         }>;
         split_method?: "equal" | "exact" | "percentage" | "shares"; // required when shared_by or user_shares present
 
-        // for settlement
+        // for settlement (account_id required; category_id not required)
         settles_user_id?: number;         // required for settlement — the user being paid back
       };
 
@@ -233,11 +233,10 @@ module Api::V0
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date (defaults to today)"
     param :note, String, required: false, desc: "Optional note"
     param :currency_id, Integer, required: false, desc: "Currency ID (defaults to account currency)"
-    param :account_id, Integer, required: false, desc: "Account ID (required for income/expense/settlement; must belong to paid_by for shared)"
-    param :category_id, Integer, required: false, desc: "Category ID (required for income/expense; must belong to paid_by for shared; not required for settlement)"
+    param :account_id, Integer, required: false, desc: "Account ID — required for income, expense (personal & shared), and settlement; belongs to current user"
+    param :category_id, Integer, required: false, desc: "Category ID — required for income and expense (personal & shared); not required for settlement; belongs to current user"
     param :from_account_id, Integer, required: false, desc: "Source account ID (required for transfer)"
     param :to_account_id, Integer, required: false, desc: "Destination account ID (required for transfer)"
-    param :paid_by, Integer, required: false, desc: "User ID of who paid (required for shared expense)"
     param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for split_method equal)"
     param :user_shares, Array, required: false, desc: "Array of {user_id, share} objects (required for split_method exact, percentage, or shares)"
     param :split_method, String, required: false, desc: "Split method: equal, exact, percentage, shares (required when shared_by or user_shares present)"
