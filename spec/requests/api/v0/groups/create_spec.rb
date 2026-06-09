@@ -46,6 +46,23 @@ RSpec.describe "Api::V0::Groups", type: :request do
       end
     end
 
+    context "when authenticated with valid user_ids" do
+      let(:member1)         { create(:user) }
+      let(:member2)         { create(:user) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { name: name, user_ids: [ member1.id, member2.id ] } }
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("groups/create_response")
+      end
+
+      it "adds the specified users and creator as members" do
+        group = Group.find_by(name: name)
+        expect(group.users).to include(user, member1, member2)
+      end
+    end
+
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do
@@ -61,6 +78,20 @@ RSpec.describe "Api::V0::Groups", type: :request do
       it "returns 422 and matches error schema" do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response).to match_json_schema("error_response")
+      end
+    end
+
+    context "when user_ids contains a non-existent user" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { name: name, user_ids: [ 0 ] } }
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+
+      it "does not create the group" do
+        expect(Group.find_by(name: name)).to be_nil
       end
     end
   end
