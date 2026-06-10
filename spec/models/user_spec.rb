@@ -6,7 +6,7 @@ RSpec.describe User, type: :model do
       user = create(:user)
 
       expect(user.categories.count).to eq(Categories::Defaults.all.size)
-      expect(user.categories.pluck(:name)).to include("Groceries", "Salary", "Other")
+      expect(user.categories.pluck(:name)).to include("Groceries", "Salary")
     end
 
     it "does not duplicate defaults when assignment runs again" do

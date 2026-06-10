@@ -12,40 +12,74 @@
   "definitions": {
     "transaction": {
       "type": "object",
-      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "category", "currency_id", "user_id", "created_at", "updated_at"],
+      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "currency_id", "user_id", "created_at", "updated_at", "display"],
       "properties": {
-        "id":               { "type": "integer" },
-        "title":            { "type": "string" },
-        "amount_cents":     { "type": "integer" },
-        "split_amount_cents": { "type": "integer" },
-        "transaction_type": { "type": "string" },
-        "visibility_type":  { "type": "string" },
-        "transaction_date": { "type": "string" },
-        "note":             { "type": ["string", "null"] },
-        "account_id":          { "type": "integer" },
+        "id":                  { "type": "integer" },
+        "title":               { "type": "string" },
+        "amount_cents":        { "type": "integer" },
+        "transaction_type":    { "type": "string" },
+        "visibility_type":     { "type": "string" },
+        "transaction_date":    { "type": "string" },
+        "note":                { "type": ["string", "null"] },
+        "account_id":          { "type": ["integer", "null"] },
         "transfer_account_id": { "type": ["integer", "null"] },
         "category_id":         { "type": ["integer", "null"] },
         "settles_user_id":     { "type": ["integer", "null"] },
-        "category":            { "oneOf": [{ "$ref": "#/definitions/category" }, { "type": "null" }] },
-        "currency_id":      { "type": "integer" },
-        "user_id":          { "type": "integer" },
-        "created_at":       { "type": "string" },
-        "updated_at":       { "type": "string" }
+        "group_id":            { "type": ["integer", "null"] },
+        "currency_id":         { "type": "integer" },
+        "user_id":             { "type": "integer" },
+        "created_at":          { "type": "string" },
+        "updated_at":          { "type": "string" },
+        "display":             { "$ref": "#/definitions/display" }
       }
     },
-    "category": {
+    "display": {
       "type": "object",
-      "required": ["id", "name", "icon", "color", "category_type", "balance_cents", "user_id", "created_at", "updated_at"],
+      "required": ["account", "category", "payer", "settles_user", "transfer_to_account", "splits"],
       "properties": {
-        "id":            { "type": "integer" },
-        "name":          { "type": "string" },
-        "icon":          { "type": ["string", "null"] },
-        "color":         { "type": ["string", "null"] },
-        "category_type": { "type": "string", "enum": ["expense", "income"] },
-        "balance_cents": { "type": "integer", "minimum": 0 },
-        "user_id":       { "type": "integer" },
-        "created_at":    { "type": "string" },
-        "updated_at":    { "type": "string" }
+        "account":             { "oneOf": [{ "$ref": "#/definitions/account_ref" }, { "type": "null" }] },
+        "category":            { "oneOf": [{ "$ref": "#/definitions/category_ref" }, { "type": "null" }] },
+        "payer":               { "oneOf": [{ "$ref": "#/definitions/user_ref" },    { "type": "null" }] },
+        "settles_user":        { "oneOf": [{ "$ref": "#/definitions/user_ref" },    { "type": "null" }] },
+        "transfer_to_account": { "oneOf": [{ "$ref": "#/definitions/account_ref" }, { "type": "null" }] },
+        "splits":              { "type": "array", "items": { "$ref": "#/definitions/split" } }
+      }
+    },
+    "account_ref": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id":   { "type": "integer" },
+        "name": { "type": "string" }
+      }
+    },
+    "category_ref": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id":    { "type": "integer" },
+        "name":  { "type": "string" },
+        "icon":  { "type": ["string", "null"] },
+        "color": { "type": ["string", "null"] }
+      }
+    },
+    "user_ref": {
+      "type": "object",
+      "required": ["id", "full_name"],
+      "properties": {
+        "id":        { "type": "integer" },
+        "full_name": { "type": "string" }
+      }
+    },
+    "split": {
+      "type": "object",
+      "required": ["user_id", "full_name", "owed_amount_cents", "split_method"],
+      "properties": {
+        "user_id":           { "type": "integer" },
+        "full_name":         { "type": "string" },
+        "owed_amount_cents": { "type": "integer" },
+        "split_method":      { "type": "string" },
+        "allocation_value":  { "type": ["number", "null"] }
       }
     }
   }

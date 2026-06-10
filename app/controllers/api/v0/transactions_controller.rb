@@ -6,22 +6,29 @@ module Api::V0
       api_version "v0"
     end
 
-    api :GET, "/v0/transactions", "List all transactions for the current user"
+    api :GET, "/v0/transactions", "List transactions visible to the current user"
     description <<~DESC
-      Returns all transactions belonging to the authenticated user, ordered by transaction date descending.
-      Supports optional filtering by account, category, date range, and keyword search.
-      Includes settlement transactions — use `transaction_type == "settlement"` to identify them.
+      Returns transactions visible to the authenticated user, ordered by transaction date descending.
+      A transaction is visible when the user is the creator, a split participant, or the settlee of a settlement.
+      Supports filtering by account, category, friend, group, transaction type, visibility, date range, and keyword.
+      Results are paginated — defaults to page 1 with 25 records per page.
 
       **TypeScript Types**
 
       ```typescript
       // Input (all optional query params)
       type Query = {
-        account_id?: number;
-        category_id?: number;
-        date_from?: string; // ISO 8601
-        date_to?: string;   // ISO 8601
-        search?: string;    // matches title or note (case-insensitive)
+        account_id?:       number;
+        category_id?:      number;
+        friend_id?:        number;  // only transactions where both current user and this user participated
+        group_id?:         number;  // only shared expenses belonging to this group
+        transaction_type?: "income" | "expense" | "transfer" | "settlement";
+        visibility_type?:  "personal" | "shared";
+        date_from?:        string;  // ISO 8601 lower bound (inclusive)
+        date_to?:          string;  // ISO 8601 upper bound (inclusive)
+        search?:           string;  // case-insensitive match against title or note
+        page?:             number;  // default: 1
+        per_page?:         number;  // default: 25
       };
 
       // Output
@@ -31,63 +38,88 @@ module Api::V0
       };
 
       type Transaction = {
-        id: number;
-        title: string;
-        amount_cents: number;
-        transaction_type: "income" | "expense" | "transfer" | "settlement";
-        visibility_type: string;
-        transaction_date: string; // ISO 8601
-        note: string | null;
-        account_id: number;
+        id:                  number;
+        title:               string;
+        amount_cents:        number;
+        transaction_type:    "income" | "expense" | "transfer" | "settlement";
+        visibility_type:     "personal" | "shared";
+        transaction_date:    string;          // ISO 8601
+        note:                string | null;
+        account_id:          number | null;
         transfer_account_id: number | null;
-        category_id: number | null;
-        settles_user_id: number | null;   // set for settlement transactions
-        category: Category | null;
-        currency_id: number;
-        user_id: number;
-        created_at: string; // ISO 8601
-        updated_at: string; // ISO 8601
+        category_id:         number | null;
+        settles_user_id:     number | null;
+        group_id:            number | null;
+        currency_id:         number;
+        user_id:             number;
+        created_at:          string;          // ISO 8601
+        updated_at:          string;          // ISO 8601
+        display:             Display;
       };
 
-      type Category = {
-        id: number;
-        name: string;
-        icon: string | null;
-        color: string | null;
-        balance_cents: number;
-        category_type: "expense" | "income";
-        user_id: number;
-        created_at: string; // ISO 8601
-        updated_at: string; // ISO 8601
+      type Display = {
+        account:             { id: number; name: string } | null;
+        category:            { id: number; name: string; icon: string | null; color: string | null } | null;
+        payer:               { id: number; full_name: string } | null;
+        settles_user:        { id: number; full_name: string } | null;
+        transfer_to_account: { id: number; name: string } | null;
+        splits: Array<{
+          user_id:           number;
+          full_name:         string;
+          owed_amount_cents: number;
+          split_method:      string;
+          allocation_value:  number | null;
+        }>;
       };
       ```
     DESC
-    param :account_id, Integer, required: false, desc: "Filter by account ID"
-    param :category_id, Integer, required: false, desc: "Filter by category ID"
-    param :date_from, String, required: false, desc: "Filter transactions on or after this ISO 8601 datetime"
-    param :date_to, String, required: false, desc: "Filter transactions on or before this ISO 8601 datetime"
-    param :search, String, required: false, desc: "Search by title or note (case-insensitive)"
+    param :account_id,       Integer, required: false, desc: "Filter by account ID"
+    param :category_id,      Integer, required: false, desc: "Filter by category ID (matches payer's category or user's split category)"
+    param :friend_id,        Integer, required: false, desc: "Only transactions where both the current user and this user participated"
+    param :group_id,         Integer, required: false, desc: "Only shared expenses belonging to this group"
+    param :transaction_type, String,  required: false, desc: "Filter by type: income, expense, transfer, or settlement"
+    param :visibility_type,  String,  required: false, desc: "Filter by visibility: personal or shared"
+    param :date_from,        String,  required: false, desc: "ISO 8601 lower bound on transaction_date (inclusive)"
+    param :date_to,          String,  required: false, desc: "ISO 8601 upper bound on transaction_date (inclusive)"
+    param :search,           String,  required: false, desc: "Case-insensitive search against title or note"
+    param :page,             Integer, required: false, desc: "Page number (default: 1)"
+    param :per_page,         Integer, required: false, desc: "Records per page (default: 25)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
+    error code: 422, desc: "Invalid date format for date_from or date_to"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
-      param :transactions, Array, desc: "List of transactions" do
-        param :id, Integer, desc: "Transaction ID"
-        param :title, String, desc: "Transaction title"
-        param :amount_cents, Integer, desc: "Amount in cents"
-        param :transaction_type, String, desc: "One of: income, expense, transfer"
-        param :visibility_type, String, desc: "Visibility type"
-        param :transaction_date, String, desc: "ISO 8601 transaction date"
-        param :note, String, desc: "Optional note"
-        param :account_id, Integer, desc: "Account ID (nil for transfers)"
-        param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
-        param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
-        param :settles_user_id, Integer, desc: "User ID of the person being paid back (nil unless settlement)"
-        param :category, Hash, desc: "Category data (nil for transfers/settlements)"
-        param :currency_id, Integer, desc: "Currency ID"
-        param :user_id, Integer, desc: "Owner user ID"
-        param :created_at, String, desc: "ISO 8601 creation timestamp"
-        param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+      param :transactions, Array, desc: "Paginated list of transactions" do
+        param :id,                  Integer, desc: "Transaction ID"
+        param :title,               String,  desc: "Transaction title"
+        param :amount_cents,        Integer, desc: "Full amount paid, in cents"
+        param :transaction_type,    String,  desc: "One of: income, expense, transfer, settlement"
+        param :visibility_type,     String,  desc: "personal or shared"
+        param :transaction_date,    String,  desc: "ISO 8601 transaction date"
+        param :note,                String,  desc: "Optional note (null if absent)"
+        param :account_id,          Integer, desc: "Source account ID (null for transfers)"
+        param :transfer_account_id, Integer, desc: "Destination account ID (null unless transfer)"
+        param :category_id,         Integer, desc: "Category ID (null for transfers/settlements)"
+        param :settles_user_id,     Integer, desc: "User being paid back (null unless settlement)"
+        param :group_id,            Integer, desc: "Group ID (null unless shared expense)"
+        param :currency_id,         Integer, desc: "Currency ID"
+        param :user_id,             Integer, desc: "Creator/payer user ID"
+        param :created_at,          String,  desc: "ISO 8601 creation timestamp"
+        param :updated_at,          String,  desc: "ISO 8601 last-update timestamp"
+        param :display,             Hash,    desc: "Pre-resolved display data — no extra lookups needed by the client" do
+          param :account,             Hash,  desc: "{ id, name } of the source account, or null"
+          param :category,            Hash,  desc: "{ id, name, icon, color } of the category, or null"
+          param :payer,               Hash,  desc: "{ id, full_name } of the creator/payer, or null"
+          param :settles_user,        Hash,  desc: "{ id, full_name } of the creditor for settlements, or null"
+          param :transfer_to_account, Hash,  desc: "{ id, name } of the destination account for transfers, or null"
+          param :splits,              Array, desc: "Split details for shared expenses (empty for personal transactions)" do
+            param :user_id,           Integer, desc: "Participant user ID"
+            param :full_name,         String,  desc: "Participant display name"
+            param :owed_amount_cents,  Integer, desc: "Amount owed by this participant, in cents"
+            param :split_method,      String,  desc: "equal, exact, percentage, or shares"
+            param :allocation_value,  Integer, desc: "Raw allocation value (null for equal splits)"
+          end
+        end
       end
     end
     def index

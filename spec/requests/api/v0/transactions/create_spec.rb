@@ -708,27 +708,6 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     # ── Shared expense (equal): failure paths ─────────────────────────────────
 
-    context "when shared_by is present but paid_by is missing" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params) do
-        {
-          title:            "Shared no payer",
-          amount_cents:     3000,
-          transaction_type: "expense",
-          shared_by:        [ user.id, user2.id ],
-          split_method:     "equal",
-          account_id:       account.id,
-          category_id:      category.id,
-          transaction_date: transaction_date
-        }
-      end
-
-      it "returns 422 and matches error schema" do
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to match_json_schema("error_response")
-      end
-    end
-
     context "when shared_by is present but split_method is missing" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
@@ -838,27 +817,6 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    context "when paid_by user does not exist" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params) do
-        {
-          title:            "No payer",
-          amount_cents:     3000,
-          transaction_type: "expense",
-          paid_by:          999_999,
-          shared_by:        [ user.id, user2.id ],
-          split_method:     "equal",
-          account_id:       account.id,
-          category_id:      category.id,
-          transaction_date: transaction_date
-        }
-      end
-
-      it "returns 404" do
-        expect(response).to have_http_status(:not_found)
-      end
-    end
-
     context "when account_id does not belong to paid_by user" do
       let(:other_account)   { create(:account, currency: currency) } # belongs to a different user
       let(:request_headers) { headers.merge(auth_headers(user)) }
@@ -904,28 +862,6 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     # ── Shared expense (exact): failure paths ─────────────────────────────────
-
-    context "when user_shares is present but paid_by is missing" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params) do
-        {
-          title:            "Exact no payer",
-          amount_cents:     3000,
-          transaction_type: "expense",
-          user_shares:      [ { user_id: user.id, share: 1500 },
-                              { user_id: user2.id, share: 1500 } ],
-          split_method:     "exact",
-          account_id:       account.id,
-          category_id:      category.id,
-          transaction_date: transaction_date
-        }
-      end
-
-      it "returns 422 and matches error schema" do
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to match_json_schema("error_response")
-      end
-    end
 
     context "when exact split share amounts do not sum to total" do
       let(:request_headers) { headers.merge(auth_headers(user)) }

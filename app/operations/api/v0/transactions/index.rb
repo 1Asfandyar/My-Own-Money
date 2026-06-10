@@ -6,9 +6,15 @@ module Api::V0::Transactions
       params do
         optional(:account_id).maybe(:integer)
         optional(:category_id).maybe(:integer)
+        optional(:friend_id).maybe(:integer)
+        optional(:group_id).maybe(:integer)
+        optional(:transaction_type).maybe(:string)
+        optional(:visibility_type).maybe(:string)
         optional(:date_from).maybe(:string)
         optional(:date_to).maybe(:string)
         optional(:search).maybe(:string)
+        optional(:page).maybe(:integer)
+        optional(:per_page).maybe(:integer)
       end
 
       rule(:date_from) do
@@ -32,7 +38,10 @@ module Api::V0::Transactions
 
       yield authorize?
 
-      Success(response_payload)
+      transactions = yield query_transactions
+      formatted    = yield Transaction::Feed.call(transactions, current_user_id: current_user.id)
+
+      Success(success: true, transactions: formatted)
     end
 
     private
@@ -43,41 +52,21 @@ module Api::V0::Transactions
       TransactionPolicy.new(current_user, Transaction).index? ? Success() : Failure(:forbidden)
     end
 
-    def response_payload
-      transactions.each { |t| t.define_singleton_method(:split_amount_cents) { 0 } }
-      {
-        success: true,
-        transactions: Api::V0::TransactionSerializer.render_as_hash(transactions, view: :with_category)
-      }
-    end
-
-    def transactions
-      @transactions ||= filtered_transactions
-    end
-
-    def filtered_transactions
-      scope = Transaction
-        .left_joins(:transaction_splits)
-        .where(
-          "transactions.user_id = :uid OR transaction_splits.user_id = :uid OR transactions.settles_user_id = :uid",
-          uid: current_user.id
-        )
-        .distinct
-        .includes(:category)
-
-      apply_filters(scope).order(transaction_date: :desc)
-    end
-
-    def apply_filters(scope)
-      scope = scope.where(account_id: params[:account_id]) if params[:account_id]
-      scope = scope.where(category_id: params[:category_id]) if params[:category_id]
-      scope = scope.where("transaction_date >= ?", Time.parse(params[:date_from])) if params[:date_from]
-      scope = scope.where("transaction_date <= ?", Time.parse(params[:date_to]))   if params[:date_to]
-      if params[:search].present?
-        term  = "%#{params[:search]}%"
-        scope = scope.where("title ILIKE ? OR note ILIKE ?", term, term)
-      end
-      scope
+    def query_transactions
+      Transaction::Query.call(
+        current_user:     current_user,
+        account_id:       params[:account_id],
+        category_id:      params[:category_id],
+        friend_id:        params[:friend_id],
+        group_id:         params[:group_id],
+        transaction_type: params[:transaction_type],
+        visibility_type:  params[:visibility_type],
+        date_from:        params[:date_from],
+        date_to:          params[:date_to],
+        search:           params[:search],
+        page:             params[:page],
+        per_page:         params[:per_page]
+      )
     end
   end
 end

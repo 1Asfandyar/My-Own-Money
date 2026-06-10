@@ -44,8 +44,8 @@ class Transaction::Shared::Create < ApplicationService
 
       # Update the payer's category by their own share amount
       payer_split = splits.find { |s| s[:user_id] == user.id }
-      puts "*** splits: #{splits.inspect}"
-      puts "*** Payer split: #{payer_split.inspect}"
+      Rails.logger.debug "*** splits: #{splits.inspect}"
+      Rails.logger.debug "*** Payer split: #{payer_split.inspect}"
       update_category_balance(category: category, amount_cents: payer_split[:owed_amount_cents]) if payer_split
     end
 
