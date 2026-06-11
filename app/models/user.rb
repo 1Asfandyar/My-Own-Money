@@ -64,6 +64,20 @@ class User < ApplicationRecord
 
   after_create :assign_default_categories
 
+  # Returns a Transaction relation scoped to transactions this user can see:
+  # transactions they created, have a split on, are the settlee of, or that
+  # belong to a group they're a member of.
+  def visible_transactions
+    Transaction
+      .left_joins(:transaction_splits)
+      .where(
+        "transactions.user_id = :uid OR transaction_splits.user_id = :uid " \
+        "OR transactions.settles_user_id = :uid OR transactions.group_id IN (:group_ids)",
+        uid: id, group_ids: group_ids.presence || [ 0 ]
+      )
+      .distinct
+  end
+
   def admin?
     role == "admin"
   end

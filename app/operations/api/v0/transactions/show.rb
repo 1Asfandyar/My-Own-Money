@@ -11,24 +11,29 @@ module Api::V0::Transactions
     def call(params, current_user:)
       @params       = params
       @current_user = current_user
-      @transaction  = current_user.transactions.find_by(id: params[:id])
 
-      return Failure(:not_found) unless transaction
+      txn = current_user.visible_transactions
+                        .includes(
+                          :user, :account, :category, :currency, :group,
+                          :settles_user, :transfer_account,
+                          transaction_splits: [ :user, :category ]
+                        )
+                        .find_by(id: params[:id])
 
-      yield authorize?
+      return Failure(:not_found) unless txn
 
-      Success(
-        success: true,
-        transaction: Api::V0::TransactionSerializer.render_as_hash(transaction)
-      )
+      yield authorize?(txn)
+
+      formatted = yield Transaction::Feed.call([ txn ], current_user_id: current_user.id)
+      Success(success: true, transaction: formatted.first)
     end
 
     private
 
-    attr_reader :current_user, :params, :transaction
+    attr_reader :current_user, :params
 
-    def authorize?
-      TransactionPolicy.new(current_user, transaction).show? ? Success() : Failure(:forbidden)
+    def authorize?(txn)
+      TransactionPolicy.new(current_user, txn).show? ? Success() : Failure(:forbidden)
     end
   end
 end

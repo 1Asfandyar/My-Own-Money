@@ -7,7 +7,7 @@ class TransactionPolicy
   end
 
   def index?   = current_user.present?
-  def show?    = owner?
+  def show?    = visible?
   def create?  = current_user.present?
   def update?  = owner?
   def destroy? = owner?
@@ -16,5 +16,12 @@ class TransactionPolicy
 
   def owner?
     record.user_id == current_user.id
+  end
+
+  def visible?
+    owner? ||
+      record.settles_user_id == current_user.id ||
+      record.transaction_splits.any? { |s| s.user_id == current_user.id } ||
+      (record.group_id.present? && current_user.group_ids.include?(record.group_id))
   end
 end
