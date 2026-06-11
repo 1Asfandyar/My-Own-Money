@@ -43,6 +43,7 @@
 class Transaction < ApplicationRecord
   enum :transaction_type, { expense: 0, income: 1, transfer: 2, settlement: 3 }
   enum :visibility_type,  { personal: 0, shared: 1 }
+  enum :split_method,     { equal: 0, percentage: 1, shares: 2, exact: 3 }, prefix: :split
 
   validates :amount_cents,     presence: true, numericality: { only_integer: true, greater_than: 0 }
   validates :title,            presence: true

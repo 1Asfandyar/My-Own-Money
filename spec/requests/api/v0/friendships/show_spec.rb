@@ -98,9 +98,9 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         txn = create(:transaction, :shared, user: user, group: group,
                      account: user_account, currency: currency, amount_cents: 3000)
         create(:transaction_split, financial_transaction: txn, user: user,
-               owed_amount_cents: 1500, split_method: :equal)
+               owed_amount_cents: 1500)
         create(:transaction_split, financial_transaction: txn, user: friend,
-               owed_amount_cents: 1500, split_method: :equal)
+               owed_amount_cents: 1500)
         { group: group, txn: txn }
       end
 
@@ -137,9 +137,9 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         txn = create(:transaction, :shared, user: friend, group: group,
                      account: friend_account, currency: currency, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn, user: user,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn, user: friend,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         { txn: txn }
       end
 
@@ -168,11 +168,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         txn = create(:transaction, :shared, user: third_party, group: group,
                      account: third_party_account, currency: currency, amount_cents: 3000)
         create(:transaction_split, financial_transaction: txn, user: user,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn, user: friend,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn, user: third_party,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         {}
       end
 
@@ -197,15 +197,15 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         txn1 = create(:transaction, :shared, user: user, group: group,
                       account: user_account, currency: currency, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn1, user: user,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn1, user: friend,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         txn2 = create(:transaction, :shared, user: friend, group: group,
                       account: friend_account, currency: currency, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn2, user: user,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn2, user: friend,
-               owed_amount_cents: 1000, split_method: :equal)
+               owed_amount_cents: 1000)
         {}
       end
 

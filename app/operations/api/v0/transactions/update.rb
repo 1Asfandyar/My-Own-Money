@@ -62,7 +62,7 @@ module Api::V0::Transactions
     end
 
     def effective_split_method
-      params[:split_method] || transaction.transaction_splits.first&.split_method.to_s
+      params[:split_method] || transaction.split_method.to_s
     end
 
     def equal_split?
@@ -84,7 +84,7 @@ module Api::V0::Transactions
     def validate_split_method_change
       return Success() unless params.key?(:split_method) && params[:split_method].present?
 
-      old_method = transaction.transaction_splits.first&.split_method.to_s
+      old_method = transaction.split_method.to_s
       return Success() if params[:split_method] == old_method
 
       if equal_split? && !params[:shared_by].present?

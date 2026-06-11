@@ -2,7 +2,7 @@
 
 module Transaction::Splits
   class Calculator
-    SUPPORTED = TransactionSplit.split_methods.keys.freeze
+    SUPPORTED = Transaction.split_methods.keys.freeze
 
     # Dispatch table — add a new entry here when introducing a new split method.
     STRATEGIES = {
@@ -37,7 +37,6 @@ module Transaction::Splits
         {
           user_id:           user_id,
           owed_amount_cents: base + (index.zero? ? remainder : 0),
-          split_method:      :equal,
           allocation_value:  nil
         }
       end
@@ -49,7 +48,6 @@ module Transaction::Splits
         {
           user_id:           s[:user_id],
           owed_amount_cents: s[:share],
-          split_method:      :exact,
           allocation_value:  s[:share]
         }
       end
@@ -65,7 +63,6 @@ module Transaction::Splits
         {
           user_id:           s[:user_id],
           owed_amount_cents: amounts[i],
-          split_method:      :percentage,
           allocation_value:  s[:share]
         }
       end
@@ -82,7 +79,6 @@ module Transaction::Splits
         {
           user_id:           s[:user_id],
           owed_amount_cents: amounts[i],
-          split_method:      :shares,
           allocation_value:  s[:share]
         }
       end

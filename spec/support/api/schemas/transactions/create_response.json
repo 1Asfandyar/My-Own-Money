@@ -16,6 +16,7 @@
         "amount_cents":     { "type": "integer" },
         "transaction_type": { "type": "string" },
         "visibility_type":  { "type": "string" },
+        "split_method":     { "type": ["string", "null"] },
         "transaction_date": { "type": "string" },
         "note":             { "type": ["string", "null"] },
         "account_id":          { "type": "integer" },

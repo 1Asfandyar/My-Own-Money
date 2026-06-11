@@ -61,6 +61,7 @@ class Transaction::Shared::Create < ApplicationService
       user:             user,
       transaction_type: :expense,
       visibility_type:  :shared,
+      split_method:     split_method,
       title:            title,
       amount_cents:     amount_cents,
       account:          account,
@@ -93,7 +94,6 @@ class Transaction::Shared::Create < ApplicationService
     splits.each do |split|
       transaction.transaction_splits.create!(
         user_id:           split[:user_id],
-        split_method:      split[:split_method],
         owed_amount_cents: split[:owed_amount_cents],
         allocation_value:  split[:allocation_value]
       )

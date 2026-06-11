@@ -19,6 +19,7 @@
         "amount_cents":        { "type": "integer" },
         "transaction_type":    { "type": "string" },
         "visibility_type":     { "type": "string" },
+        "split_method":        { "type": ["string", "null"] },
         "transaction_date":    { "type": "string" },
         "note":                { "type": ["string", "null"] },
         "account_id":          { "type": ["integer", "null"] },
@@ -42,7 +43,7 @@
         "payer":               { "oneOf": [{ "$ref": "#/definitions/user_ref" },    { "type": "null" }] },
         "settles_user":        { "oneOf": [{ "$ref": "#/definitions/user_ref" },    { "type": "null" }] },
         "transfer_to_account": { "oneOf": [{ "$ref": "#/definitions/account_ref" }, { "type": "null" }] },
-        "splits":              { "type": "array", "items": { "$ref": "#/definitions/split" } }
+        "splits":              { "oneOf": [{ "type": "array", "items": { "$ref": "#/definitions/split" } }, { "type": "null" }] }
       }
     },
     "account_ref": {
@@ -73,12 +74,11 @@
     },
     "split": {
       "type": "object",
-      "required": ["user_id", "full_name", "owed_amount_cents", "split_method"],
+      "required": ["user_id", "full_name", "owed_amount_cents"],
       "properties": {
         "user_id":           { "type": "integer" },
         "full_name":         { "type": "string" },
         "owed_amount_cents": { "type": "integer" },
-        "split_method":      { "type": "string" },
         "allocation_value":  { "type": ["number", "null"] }
       }
     }

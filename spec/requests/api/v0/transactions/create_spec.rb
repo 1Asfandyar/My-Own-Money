@@ -201,7 +201,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         splits = t.transaction_splits.order(:owed_amount_cents)
         expect(splits.count).to eq(3)
         expect(splits.map(&:owed_amount_cents).sum).to eq(3000)
-        expect(splits.map(&:split_method).uniq).to eq([ "equal" ])
+        expect(t.split_method).to eq("equal")
       end
 
       it "creates debts for the non-payer sharers" do
@@ -477,7 +477,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(splits[user.id].owed_amount_cents).to eq(1000)
         expect(splits[user2.id].owed_amount_cents).to eq(800)
         expect(splits[user3.id].owed_amount_cents).to eq(1200)
-        expect(splits.values.map(&:split_method).uniq).to eq([ "exact" ])
+        expect(t.split_method).to eq("exact")
       end
 
       it "creates debts only for non-payer sharers" do
@@ -971,7 +971,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(splits[user.id].owed_amount_cents).to eq(5000)
         expect(splits[user2.id].owed_amount_cents).to eq(3000)
         expect(splits[user3.id].owed_amount_cents).to eq(2000)
-        expect(splits.values.map(&:split_method).uniq).to eq([ "percentage" ])
+        expect(t.split_method).to eq("percentage")
         expect(splits.values.map(&:owed_amount_cents).sum).to eq(10_000)
       end
 
@@ -1112,7 +1112,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(splits[user.id].owed_amount_cents).to eq(2000)
         expect(splits[user2.id].owed_amount_cents).to eq(4000)
         expect(splits[user3.id].owed_amount_cents).to eq(6000)
-        expect(splits.values.map(&:split_method).uniq).to eq([ "shares" ])
+        expect(t.split_method).to eq("shares")
         expect(splits.values.map(&:owed_amount_cents).sum).to eq(12_000)
       end
 

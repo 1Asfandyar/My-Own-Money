@@ -56,7 +56,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
                              currency: currency, title: "Shared Dinner", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -103,9 +103,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
                              currency: currency, title: "Group Trip", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 300)
+               owed_amount_cents: 300)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user,
-               split_method: :equal, owed_amount_cents: 300)
+               owed_amount_cents: 300)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -177,7 +177,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         shared_txn = create(:transaction, :shared, user: user, account: account,
                              currency: currency, title: "Group Dinner", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -200,11 +200,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         group_txn = create(:transaction, :shared, user: user, account: account,
                            currency: currency, title: "Group Expense", group: group)
         create(:transaction_split, financial_transaction: group_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         other_txn = create(:transaction, :shared, user: user, account: account,
                            currency: currency, title: "Other Group Expense", group: other_group)
         create(:transaction_split, financial_transaction: other_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -229,9 +229,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                              currency: currency, title: "Shared with Friend", group: group)
         # Both current user AND friend need split rows for the friend_id filter to match
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: shared_txn, user: friend,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
         get endpoint, params: request_params, headers: request_headers
       end

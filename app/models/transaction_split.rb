@@ -25,10 +25,7 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class TransactionSplit < ApplicationRecord
-  enum :split_method, { equal: 0, percentage: 1, shares: 2, exact: 3 }
-
   validates :owed_amount_cents, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :split_method, presence: true
 
   validate :allocation_value_required
 
@@ -39,7 +36,7 @@ class TransactionSplit < ApplicationRecord
   private
 
   def allocation_value_required
-    return unless percentage? || shares?
+    return unless financial_transaction&.split_percentage? || financial_transaction&.split_shares?
 
     errors.add(:allocation_value, "is required") if allocation_value.nil?
   end

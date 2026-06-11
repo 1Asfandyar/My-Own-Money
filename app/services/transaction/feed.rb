@@ -32,6 +32,7 @@ class Transaction::Feed < ApplicationService
       amount_cents:        txn.amount_cents,
       transaction_type:    txn.transaction_type,
       visibility_type:     txn.visibility_type,
+      split_method:        txn.split_method,
       transaction_date:    txn.transaction_date,
       note:                txn.note,
       account_id:          txn.account_id,
@@ -93,7 +94,6 @@ class Transaction::Feed < ApplicationService
       user_id:           split.user_id,
       full_name:         split.user.full_name,
       owed_amount_cents: split.owed_amount_cents,
-      split_method:      split.split_method,
       allocation_value:  split.allocation_value
     }
   end
