@@ -181,6 +181,7 @@ module Api::V0
       type Body = {
         name: string;
         description?: string;
+        user_ids?: number[];
       };
 
       // Output
@@ -212,9 +213,10 @@ module Api::V0
     DESC
     param :name, String, required: true, description: "Group name"
     param :description, String, required: false, description: "Optional group description"
+    param :user_ids, Array, required: false, description: "Optional array of user IDs to add as members upon creation"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
-    error code: 422, desc: "Validation errors"
+    error code: 422, desc: "Validation errors — e.g. one or more users do not exist"
     returns code: 201, desc: "Group created" do
       param :success, :bool, desc: "Operation status"
       param :group, Hash, desc: "Created group data" do

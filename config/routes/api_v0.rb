@@ -28,5 +28,7 @@ namespace :api do
     end
 
     resources :friendships
+
+    get "reports/summary", to: "reports#summary"
   end
 end

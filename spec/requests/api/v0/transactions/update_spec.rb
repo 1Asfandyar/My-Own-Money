@@ -49,12 +49,13 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                currency:         currency,
                transaction_type: :expense,
                visibility_type:  :shared,
+               split_method:     :equal,
                amount_cents:     3000,
                title:            "Shared Dinner",
                transaction_date: Time.current)
-    t.transaction_splits.create!(user_id: user.id,  split_method: :equal, owed_amount_cents: 1000)
-    t.transaction_splits.create!(user_id: user2.id, split_method: :equal, owed_amount_cents: 1000)
-    t.transaction_splits.create!(user_id: user3.id, split_method: :equal, owed_amount_cents: 1000)
+    t.transaction_splits.create!(user_id: user.id,  owed_amount_cents: 1000)
+    t.transaction_splits.create!(user_id: user2.id, owed_amount_cents: 1000)
+    t.transaction_splits.create!(user_id: user3.id, owed_amount_cents: 1000)
     create(:debt, from_user: user2, to_user: user, amount_cents: 1000)
     create(:debt, from_user: user3, to_user: user, amount_cents: 1000)
     account.update!(current_balance_cents: -3000)
@@ -329,7 +330,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         splits = shared_transaction.reload.transaction_splits.index_by(&:user_id)
         expect(splits[user.id].owed_amount_cents).to eq(1500)
         expect(splits[user2.id].owed_amount_cents).to eq(1500)
-        expect(splits.values.map(&:split_method).uniq).to eq([ "exact" ])
+        expect(shared_transaction.reload.split_method).to eq("exact")
       end
 
       it "reverses old debts and applies new exact debts" do

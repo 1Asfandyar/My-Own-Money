@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_04_110059) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -194,12 +194,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_110059) do
 
   create_table "transaction_splits", force: :cascade do |t|
     t.decimal "allocation_value", precision: 15, scale: 4
+    t.bigint "category_id"
     t.datetime "created_at", null: false
     t.integer "owed_amount_cents", null: false
-    t.integer "split_method", null: false
     t.bigint "transaction_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["category_id"], name: "index_transaction_splits_on_category_id"
     t.index ["transaction_id"], name: "index_transaction_splits_on_transaction_id"
     t.index ["user_id"], name: "index_transaction_splits_on_user_id"
   end
@@ -213,6 +214,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_110059) do
     t.bigint "group_id"
     t.text "note"
     t.bigint "settles_user_id"
+    t.integer "split_method"
     t.string "title", null: false
     t.datetime "transaction_date", null: false
     t.integer "transaction_type", null: false
@@ -265,6 +267,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_110059) do
   add_foreign_key "groups", "users", column: "created_by_id"
   add_foreign_key "groups_users", "groups"
   add_foreign_key "groups_users", "users"
+  add_foreign_key "transaction_splits", "categories"
   add_foreign_key "transaction_splits", "transactions"
   add_foreign_key "transaction_splits", "users"
   add_foreign_key "transactions", "accounts"

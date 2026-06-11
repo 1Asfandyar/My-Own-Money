@@ -11,13 +11,15 @@
 
 ## Transaction Types & When to Use Each
 
-| Type       | visibility_type | Has splits? | Updates debts? | Updates account balance?            |
-|------------|-----------------|-------------|----------------|-------------------------------------|
-| expense    | personal        | no          | no             | yes (deducts from account)          |
-| expense    | shared          | yes         | yes            | yes (deducts full amount from payer)|
-| income     | personal        | no          | no             | yes (adds to account)               |
-| transfer   | personal        | no          | no             | yes (deducts from → credits to)     |
-| settlement | shared          | no          | yes (reduces)  | yes (see Settlement Account Changes)|
+| Type       | visibility_type | Has splits? | Updates debts? | Updates account balance?            | account_id required? | category_id required? |
+|------------|-----------------|-------------|----------------|-------------------------------------|---------------------|-----------------------|
+| expense    | personal        | no          | no             | yes (deducts from account)          | yes                 | yes                   |
+| expense    | shared          | yes         | yes            | yes (deducts full amount from payer)| yes                 | yes                   |
+| income     | personal        | no          | no             | yes (adds to account)               | yes                 | yes                   |
+| transfer   | personal        | no          | no             | yes (deducts from → credits to)     | no (use from/to)    | no                    |
+| settlement | shared          | no          | yes (reduces)  | yes (see Settlement Account Changes)| yes                 | no                    |
+
+**The current user is always the payer / creator.** `paid_by` is not a separate param — whoever calls the endpoint owns the transaction.
 
 ---
 
@@ -65,17 +67,20 @@ Sara:  owed_amount=4500
 
 ## Debt Calculation After Shared Expense
 
-Payer is owed by everyone else for their share.
+Payer (current user) is owed by everyone else for their share. The payer's category balance is updated by **their own owed_amount_cents**, not the full transaction amount.
 
 ```
-Ahmed pays 3000 (shared, equal 3-way)
+Ahmed (current_user) pays 3000 (shared, equal 3-way)
 Splits: Ahmed=1000, Ali=1000, Sara=1000
 
 Debts created:
   Ali  → Ahmed: 1000
   Sara → Ahmed: 1000
 
+Ahmed's category balance updated by 1000 (his share).
 Ahmed's own share (1000) is already his — no self-debt.
+
+Non-payers (Ali, Sara) set their transaction_splits.category_id later (optional).
 ```
 
 **Algorithm:**
@@ -155,12 +160,21 @@ Report shows:
 NOT: Ahmed expense = 3000
 ```
 
+For **category-level** reports on shared expenses, use `transaction_splits.category_id` (each participant's personal category). `transactions.category_id` is the payer's category and is used for group-visible display only.
+
 Query pattern:
 ```ruby
 # User's total shared expenses for a period
 TransactionSplit
   .joins(:transaction)
   .where(user_id: user.id, transactions: { transaction_type: :expense })
+  .sum(:owed_amount_cents)
+
+# User's spending by personal category (shared expenses)
+TransactionSplit
+  .joins(:transaction)
+  .where(user_id: user.id, transactions: { transaction_type: :expense })
+  .group(:category_id)
   .sum(:owed_amount_cents)
 ```
 

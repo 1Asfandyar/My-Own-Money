@@ -56,7 +56,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
                              currency: currency, title: "Shared Dinner", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 500)
+               owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -103,9 +103,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
                              currency: currency, title: "Group Trip", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
-               split_method: :equal, owed_amount_cents: 300)
+               owed_amount_cents: 300)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user,
-               split_method: :equal, owed_amount_cents: 300)
+               owed_amount_cents: 300)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -128,21 +128,152 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         get endpoint, params: request_params, headers: request_headers
       end
 
-      it "returns only transactions for that account" do
-        account_ids = JSON.parse(response.body)["transactions"].map { |t| t["account_id"] }.uniq
+      it "returns 200, matches schema, and returns only transactions for that account" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        account_ids = JSON.parse(response.body)["transactions"].map { |t| t.dig("account", "id") }.uniq
         expect(account_ids).to eq([ account.id ])
       end
 
-      it "returns category information with each transaction" do
+      it "includes category info in display for each transaction" do
         transaction = JSON.parse(response.body)["transactions"].first
 
-        expect(transaction["category_id"]).to eq(category.id)
+        expect(transaction.dig("category", "id")).to eq(category.id)
         expect(transaction["category"]).to include(
-          "id" => category.id,
-          "name" => category.name,
-          "category_type" => category.category_type,
-          "user_id" => user.id
+          "id"   => category.id,
+          "name" => category.name
         )
+      end
+    end
+
+    context "when filtered by transaction_type" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { transaction_type: "income" } }
+
+      before do
+        create(:transaction, user: user, account: account, currency: currency,
+               transaction_type: :expense, title: "Groceries")
+        create(:transaction, user: user, account: account, currency: currency,
+               transaction_type: :income, title: "Salary")
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and only transactions of the requested type" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        types = JSON.parse(response.body)["transactions"].map { |t| t["type"] }.uniq
+        expect(types).to eq([ "income" ])
+      end
+    end
+
+    context "when filtered by visibility_type" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { visibility_type: "personal" } }
+      let(:group)           { create(:group) }
+
+      before do
+        create(:transaction, user: user, account: account, currency: currency,
+               visibility_type: :personal, title: "Personal Expense")
+        shared_txn = create(:transaction, :shared, user: user, account: account,
+                             currency: currency, title: "Group Dinner", group: group)
+        create(:transaction_split, financial_transaction: shared_txn, user: user,
+               owed_amount_cents: 500)
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and only transactions with the requested visibility" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Personal Expense")
+        expect(titles).not_to include("Group Dinner")
+      end
+    end
+
+    context "when filtered by group_id" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:group)           { create(:group) }
+      let(:other_group)     { create(:group) }
+      let(:request_params)  { { group_id: group.id } }
+
+      before do
+        group_txn = create(:transaction, :shared, user: user, account: account,
+                           currency: currency, title: "Group Expense", group: group)
+        create(:transaction_split, financial_transaction: group_txn, user: user,
+               owed_amount_cents: 500)
+        other_txn = create(:transaction, :shared, user: user, account: account,
+                           currency: currency, title: "Other Group Expense", group: other_group)
+        create(:transaction_split, financial_transaction: other_txn, user: user,
+               owed_amount_cents: 500)
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and only transactions belonging to that group" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Group Expense")
+        expect(titles).not_to include("Other Group Expense")
+      end
+    end
+
+    context "when filtered by friend_id" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:friend)          { create(:user) }
+      let(:friend_account)  { create(:account, user: friend, currency: currency) }
+      let(:group)           { create(:group) }
+      let(:request_params)  { { friend_id: friend.id } }
+
+      before do
+        shared_txn = create(:transaction, :shared, user: friend, account: friend_account,
+                             currency: currency, title: "Shared with Friend", group: group)
+        # Both current user AND friend need split rows for the friend_id filter to match
+        create(:transaction_split, financial_transaction: shared_txn, user: user,
+               owed_amount_cents: 500)
+        create(:transaction_split, financial_transaction: shared_txn, user: friend,
+               owed_amount_cents: 500)
+        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and only transactions where both user and friend participated" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Shared with Friend")
+        expect(titles).not_to include("My Personal")
+      end
+    end
+
+    context "when paginated with per_page" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { per_page: 2, page: 1 } }
+
+      before do
+        3.times { |i| create(:transaction, user: user, account: account, currency: currency, transaction_date: i.days.ago) }
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and respects the per_page limit" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        expect(JSON.parse(response.body)["transactions"].size).to eq(2)
+      end
+    end
+
+    context "when requesting page 2" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params)  { { per_page: 2, page: 2 } }
+
+      before do
+        3.times { |i| create(:transaction, user: user, account: account, currency: currency, transaction_date: i.days.ago) }
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and the remaining records" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        expect(JSON.parse(response.body)["transactions"].size).to eq(1)
       end
     end
 
@@ -159,7 +290,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
       it "returns only transactions for that category" do
         expect(response).to have_http_status(:ok)
-        category_ids = JSON.parse(response.body)["transactions"].map { |t| t["category_id"] }.uniq
+        category_ids = JSON.parse(response.body)["transactions"].map { |t| t.dig("category", "id") }.uniq
         expect(category_ids).to eq([ category.id ])
       end
     end

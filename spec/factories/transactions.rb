@@ -16,6 +16,7 @@ FactoryBot.define do
 
     trait :shared do
       visibility_type { :shared }
+      split_method    { :equal }
       association :group
     end
 

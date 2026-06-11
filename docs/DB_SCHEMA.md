@@ -231,16 +231,17 @@ add_index :transactions, :transaction_type
 ---
 
 ### transaction_splits
-| Column           | Type           | Null  | Notes                              |
-|------------------|----------------|-------|------------------------------------|
-| id               | bigint         | false | PK                                 |
-| transaction_id   | bigint         | false | FK → transactions                  |
-| user_id          | bigint         | false | FK → users                         |
-| split_method     | integer        | false | enum                               |
-| allocation_value | decimal(15,4)  | true  | percentage % or shares count       |
-| owed_amount_cents| integer        | false | final calculated amount in cents   |
-| created_at       | datetime       | false |                                    |
-| updated_at       | datetime       | false |                                    |
+| Column           | Type           | Null  | Notes                                         |
+|------------------|----------------|-------|-----------------------------------------------|
+| id               | bigint         | false | PK                                            |
+| transaction_id   | bigint         | false | FK → transactions                             |
+| user_id          | bigint         | false | FK → users                                    |
+| category_id      | bigint         | true  | FK → categories; participant's personal category |
+| split_method     | integer        | false | enum                                          |
+| allocation_value | decimal(15,4)  | true  | percentage % or shares count                  |
+| owed_amount_cents| integer        | false | final calculated amount in cents              |
+| created_at       | datetime       | false |                                               |
+| updated_at       | datetime       | false |                                               |
 
 ```ruby
 validates :owed_amount_cents, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
@@ -255,12 +256,16 @@ end
 
 belongs_to :transaction
 belongs_to :user
+belongs_to :category, optional: true
 ```
+
+> `category_id` is the participant's **personal** category for this shared expense. It is separate from `transactions.category_id` (the payer's category). Non-payers leave it nil at creation and assign it later. This makes "my spending by category" queries symmetric — always hit `transaction_splits` for shared expenses regardless of whether you are the payer.
 
 Indexes:
 ```ruby
 add_index :transaction_splits, :transaction_id
 add_index :transaction_splits, :user_id
+add_index :transaction_splits, :category_id
 ```
 
 ---

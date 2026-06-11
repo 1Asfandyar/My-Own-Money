@@ -11,17 +11,14 @@ module Api::V0::Transactions
       if transfer?
         yield find_from_account
         yield find_to_account
-      elsif shared_expense?
-        yield find_paid_by_user
-        yield find_account_for_payer
-        yield find_category_for_payer
-        yield(equal_shared? ? find_shared_by_users : find_user_shares_users)
       elsif settlement?
         yield find_settles_user
         yield find_account
       else
+        # personal expense, income, and shared expense all use current_user's account/category
         yield find_account
         yield find_category
+        yield(equal_shared? ? find_shared_by_users : find_user_shares_users) if shared_expense?
       end
       yield find_currency
       yield persist
@@ -35,7 +32,7 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :account, :from_account, :to_account,
-                :category, :currency, :transaction, :paid_by_user, :shared_by_users, :settles_user
+                :category, :currency, :transaction, :shared_by_users, :settles_user
 
     def transfer?
       params[:transaction_type] == "transfer"
@@ -54,8 +51,6 @@ module Api::V0::Transactions
       params[:shared_by].present?
     end
 
-    # --- finders for personal expense ---
-
     def find_account
       @account = current_user.accounts.find_by(id: params[:account_id])
       @account ? Success() : Failure(:not_found)
@@ -65,8 +60,6 @@ module Api::V0::Transactions
       @category = current_user.categories.find_by(id: params[:category_id])
       @category ? Success() : Failure(:not_found)
     end
-
-    # --- finders for transfer ---
 
     def find_from_account
       @from_account = current_user.accounts.find_by(id: params[:from_account_id])
@@ -78,38 +71,17 @@ module Api::V0::Transactions
       @to_account ? Success() : Failure(:not_found)
     end
 
-    # --- finders for settlement ---
-
     def find_settles_user
       @settles_user = User.find_by(id: params[:settles_user_id])
       @settles_user ? Success() : Failure(:not_found)
     end
 
-    # --- finders for shared expense ---
-
-    def find_paid_by_user
-      @paid_by_user = User.find_by(id: params[:paid_by])
-      @paid_by_user ? Success() : Failure(:not_found)
-    end
-
-    def find_account_for_payer
-      @account = paid_by_user.accounts.find_by(id: params[:account_id])
-      @account ? Success() : Failure(:not_found)
-    end
-
-    def find_category_for_payer
-      @category = paid_by_user.categories.find_by(id: params[:category_id])
-      @category ? Success() : Failure(:not_found)
-    end
-
-    # Equal split: load User records and validate all IDs exist.
     def find_shared_by_users
       @shared_by_users = User.where(id: params[:shared_by]).to_a
       missing = params[:shared_by] - @shared_by_users.map(&:id)
       missing.empty? ? Success() : Failure(errors: { shared_by: [ "contains unknown user IDs: #{missing.join(', ')}" ] })
     end
 
-    # Non-equal split: validate all user_id values in user_shares exist.
     def find_user_shares_users
       user_ids  = params[:user_shares].map { |s| s[:user_id] }
       found_ids = User.where(id: user_ids).pluck(:id)
@@ -119,16 +91,12 @@ module Api::V0::Transactions
       Success()
     end
 
-    # --- currency (all types) ---
-
     def find_currency
       return Success() unless params[:currency_id]
 
       @currency = Currency.find_by(id: params[:currency_id])
       @currency ? Success() : Failure(:not_found)
     end
-
-    # --- persistence ---
 
     def persist
       if transfer?
@@ -191,7 +159,7 @@ module Api::V0::Transactions
 
     def shared_expense_args
       base_args = {
-        paid_by_user:     paid_by_user,
+        user:             current_user,
         split_method:     params[:split_method],
         title:            params[:title],
         amount_cents:     params[:amount_cents],
