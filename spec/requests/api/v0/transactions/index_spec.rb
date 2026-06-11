@@ -131,15 +131,15 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 200, matches schema, and returns only transactions for that account" do
         expect(response).to have_http_status(:ok)
         expect(response).to match_json_schema("transactions/index_response")
-        account_ids = JSON.parse(response.body)["transactions"].map { |t| t["account_id"] }.uniq
+        account_ids = JSON.parse(response.body)["transactions"].map { |t| t.dig("account", "id") }.uniq
         expect(account_ids).to eq([ account.id ])
       end
 
       it "includes category info in display for each transaction" do
         transaction = JSON.parse(response.body)["transactions"].first
 
-        expect(transaction["category_id"]).to eq(category.id)
-        expect(transaction.dig("display", "category")).to include(
+        expect(transaction.dig("category", "id")).to eq(category.id)
+        expect(transaction["category"]).to include(
           "id"   => category.id,
           "name" => category.name
         )
@@ -161,7 +161,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 200 and only transactions of the requested type" do
         expect(response).to have_http_status(:ok)
         expect(response).to match_json_schema("transactions/index_response")
-        types = JSON.parse(response.body)["transactions"].map { |t| t["transaction_type"] }.uniq
+        types = JSON.parse(response.body)["transactions"].map { |t| t["type"] }.uniq
         expect(types).to eq([ "income" ])
       end
     end
@@ -290,7 +290,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
       it "returns only transactions for that category" do
         expect(response).to have_http_status(:ok)
-        category_ids = JSON.parse(response.body)["transactions"].map { |t| t["category_id"] }.uniq
+        category_ids = JSON.parse(response.body)["transactions"].map { |t| t.dig("category", "id") }.uniq
         expect(category_ids).to eq([ category.id ])
       end
     end

@@ -39,37 +39,42 @@ module Api::V0
 
       type Transaction = {
         id:                  number;
+        type:                "expense" | "income" | "transfer" | "settlement";
+        visibility:          "personal" | "shared";
         title:               string;
-        amount_cents:        number;
-        transaction_type:    "income" | "expense" | "transfer" | "settlement";
-        visibility_type:     "personal" | "shared";
-        transaction_date:    string;          // ISO 8601
         note:                string | null;
-        account_id:          number | null;
-        transfer_account_id: number | null;
-        category_id:         number | null;
-        settles_user_id:     number | null;
-        group_id:            number | null;
-        currency_id:         number;
-        user_id:             number;
-        created_at:          string;          // ISO 8601
-        updated_at:          string;          // ISO 8601
-        display:             Display;
+        date:                string;          // ISO 8601
+        currency:            { code: string; symbol: string };
+        amount_cents:        number;
+        render_as:           "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
+        viewer_role:         "owner" | "payer" | "participant" | "settler" | "settlee";
+        summary:             Summary;
+        paid_by:             UserWithIsYou;
+        account:             { id: number; name: string };
+        transfer_to_account: { id: number; name: string } | null;
+        category:            { id: number; name: string } | null;
+        counterpart:         { id: number; name: string } | null;
+        split_method:        string | null;
+        splits:              Split[] | null;
       };
 
-      type Display = {
-        account:             { id: number; name: string } | null;
-        category:            { id: number; name: string; icon: string | null; color: string | null } | null;
-        payer:               { id: number; full_name: string } | null;
-        settles_user:        { id: number; full_name: string } | null;
-        transfer_to_account: { id: number; name: string } | null;
-        splits: Array<{
-          user_id:           number;
-          full_name:         string;
-          owed_amount_cents: number;
-          split_method:      string;
-          allocation_value:  number | null;
-        }>;
+      type Summary = {
+        label:         string;  // e.g. "you lent", "you owe", "you paid"
+        amount_cents:  number;
+        paid_by_label: string;  // "You" or payer's name
+      };
+
+      type UserWithIsYou = {
+        id:     number;
+        name:   string;
+        is_you: boolean;
+      };
+
+      type Split = {
+        user:              UserWithIsYou;
+        owed_amount_cents: number;
+        allocation_value:  number | null;
+        category:          { id: number; name: string } | null;
       };
       ```
     DESC
@@ -91,34 +96,45 @@ module Api::V0
       param :success, :bool, desc: "Operation status"
       param :transactions, Array, desc: "Paginated list of transactions" do
         param :id,                  Integer, desc: "Transaction ID"
+        param :type,                String,  desc: "One of: expense, income, transfer, settlement"
+        param :visibility,          String,  desc: "personal or shared"
         param :title,               String,  desc: "Transaction title"
-        param :amount_cents,        Integer, desc: "Full amount paid, in cents"
-        param :transaction_type,    String,  desc: "One of: income, expense, transfer, settlement"
-        param :visibility_type,     String,  desc: "personal or shared"
-        param :transaction_date,    String,  desc: "ISO 8601 transaction date"
         param :note,                String,  desc: "Optional note (null if absent)"
-        param :account_id,          Integer, desc: "Source account ID (null for transfers)"
-        param :transfer_account_id, Integer, desc: "Destination account ID (null unless transfer)"
-        param :category_id,         Integer, desc: "Category ID (null for transfers/settlements)"
-        param :settles_user_id,     Integer, desc: "User being paid back (null unless settlement)"
-        param :group_id,            Integer, desc: "Group ID (null unless shared expense)"
-        param :currency_id,         Integer, desc: "Currency ID"
-        param :user_id,             Integer, desc: "Creator/payer user ID"
-        param :created_at,          String,  desc: "ISO 8601 creation timestamp"
-        param :updated_at,          String,  desc: "ISO 8601 last-update timestamp"
-        param :display,             Hash,    desc: "Pre-resolved display data — no extra lookups needed by the client" do
-          param :account,             Hash,  desc: "{ id, name } of the source account, or null"
-          param :category,            Hash,  desc: "{ id, name, icon, color } of the category, or null"
-          param :payer,               Hash,  desc: "{ id, full_name } of the creator/payer, or null"
-          param :settles_user,        Hash,  desc: "{ id, full_name } of the creditor for settlements, or null"
-          param :transfer_to_account, Hash,  desc: "{ id, name } of the destination account for transfers, or null"
-          param :splits,              Array, desc: "Split details for shared expenses (empty for personal transactions)" do
-            param :user_id,           Integer, desc: "Participant user ID"
-            param :full_name,         String,  desc: "Participant display name"
-            param :owed_amount_cents,  Integer, desc: "Amount owed by this participant, in cents"
-            param :split_method,      String,  desc: "equal, exact, percentage, or shares"
-            param :allocation_value,  Integer, desc: "Raw allocation value (null for equal splits)"
+        param :date,                String,  desc: "ISO 8601 transaction date"
+        param :currency,            Hash,    desc: "{ code, symbol } of the transaction currency" do
+          param :code,   String, desc: "Currency code (e.g. USD)"
+          param :symbol, String, desc: "Currency symbol (e.g. $)"
+        end
+        param :amount_cents,        Integer, desc: "Full amount paid by the payer, in cents"
+        param :render_as,           String,  desc: "UI hint: personal_expense, personal_income, transfer, shared_expense_payer, shared_expense_participant, settlement_settler, settlement_settlee"
+        param :viewer_role,         String,  desc: "Viewer's role: owner, payer, participant, settler, settlee"
+        param :summary,             Hash,    desc: "Viewer-relative summary for display" do
+          param :label,         String,  desc: "Human-readable label (e.g. 'you lent', 'you owe', 'you paid')"
+          param :amount_cents,  Integer, desc: "Viewer-relevant amount in cents"
+          param :paid_by_label, String,  desc: "'You' or the payer's name"
+        end
+        param :paid_by,             Hash,    desc: "The user who paid" do
+          param :id,     Integer, desc: "User ID"
+          param :name,   String,  desc: "Display name"
+          param :is_you, :bool,   desc: "True when the viewer is the payer"
+        end
+        param :account,             Hash,    desc: "Source account { id, name }" do
+          param :id,   Integer, desc: "Account ID"
+          param :name, String,  desc: "Account name"
+        end
+        param :transfer_to_account, Hash,    desc: "Destination account { id, name } for transfers, or null"
+        param :category,            Hash,    desc: "Category { id, name }, or null"
+        param :counterpart,         Hash,    desc: "The other party { id, name } for settlements, or null"
+        param :split_method,        String,  desc: "equal, exact, percentage, or shares (null for non-shared expenses)"
+        param :splits,              Array,   desc: "Split details for shared expenses, null otherwise" do
+          param :user,              Hash,    desc: "Participant" do
+            param :id,     Integer, desc: "User ID"
+            param :name,   String,  desc: "Display name"
+            param :is_you, :bool,   desc: "True when this split belongs to the viewer"
           end
+          param :owed_amount_cents, Integer, desc: "Amount owed by this participant, in cents"
+          param :allocation_value,  Float,   desc: "Raw allocation value (null for equal splits)"
+          param :category,          Hash,    desc: "Participant's category { id, name }, or null"
         end
       end
     end
@@ -147,21 +163,43 @@ module Api::V0
       };
 
       type Transaction = {
-        id: number;
-        title: string;
-        amount_cents: number;
-        transaction_type: "income" | "expense" | "transfer" | "settlement";
-        visibility_type: string;
-        transaction_date: string; // ISO 8601
-        note: string | null;
-        account_id: number;
-        transfer_account_id: number | null;
-        category_id: number | null;
-        settles_user_id: number | null;   // set for settlement transactions
-        currency_id: number;
-        user_id: number;
-        created_at: string; // ISO 8601
-        updated_at: string; // ISO 8601
+        id:                  number;
+        type:                "expense" | "income" | "transfer" | "settlement";
+        visibility:          "personal" | "shared";
+        title:               string;
+        note:                string | null;
+        date:                string;          // ISO 8601
+        currency:            { code: string; symbol: string };
+        amount_cents:        number;
+        render_as:           "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
+        viewer_role:         "owner" | "payer" | "participant" | "settler" | "settlee";
+        summary:             Summary;
+        paid_by:             UserWithIsYou;
+        account:             { id: number; name: string };
+        transfer_to_account: { id: number; name: string } | null;
+        category:            { id: number; name: string } | null;
+        counterpart:         { id: number; name: string } | null;
+        split_method:        string | null;
+        splits:              Split[] | null;
+      };
+
+      type Summary = {
+        label:         string;
+        amount_cents:  number;
+        paid_by_label: string;
+      };
+
+      type UserWithIsYou = {
+        id:     number;
+        name:   string;
+        is_you: boolean;
+      };
+
+      type Split = {
+        user:              UserWithIsYou;
+        owed_amount_cents: number;
+        allocation_value:  number | null;
+        category:          { id: number; name: string } | null;
       };
       ```
     DESC
@@ -172,21 +210,47 @@ module Api::V0
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
       param :transaction, Hash, desc: "Transaction data" do
-        param :id, Integer, desc: "Transaction ID"
-        param :title, String, desc: "Transaction title"
-        param :amount_cents, Integer, desc: "Amount in cents"
-        param :transaction_type, String, desc: "One of: income, expense, transfer, settlement"
-        param :visibility_type, String, desc: "Visibility type"
-        param :transaction_date, String, desc: "ISO 8601 transaction date"
-        param :note, String, desc: "Optional note"
-        param :account_id, Integer, desc: "Account ID"
-        param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
-        param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
-        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
-        param :currency_id, Integer, desc: "Currency ID"
-        param :user_id, Integer, desc: "Owner user ID"
-        param :created_at, String, desc: "ISO 8601 creation timestamp"
-        param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        param :id,                  Integer, desc: "Transaction ID"
+        param :type,                String,  desc: "One of: expense, income, transfer, settlement"
+        param :visibility,          String,  desc: "personal or shared"
+        param :title,               String,  desc: "Transaction title"
+        param :note,                String,  desc: "Optional note (null if absent)"
+        param :date,                String,  desc: "ISO 8601 transaction date"
+        param :currency,            Hash,    desc: "{ code, symbol } of the transaction currency" do
+          param :code,   String, desc: "Currency code (e.g. USD)"
+          param :symbol, String, desc: "Currency symbol (e.g. $)"
+        end
+        param :amount_cents,        Integer, desc: "Full amount paid by the payer, in cents"
+        param :render_as,           String,  desc: "UI hint: personal_expense, personal_income, transfer, shared_expense_payer, shared_expense_participant, settlement_settler, settlement_settlee"
+        param :viewer_role,         String,  desc: "Viewer's role: owner, payer, participant, settler, settlee"
+        param :summary,             Hash,    desc: "Viewer-relative summary for display" do
+          param :label,         String,  desc: "Human-readable label (e.g. 'you lent', 'you owe', 'you paid')"
+          param :amount_cents,  Integer, desc: "Viewer-relevant amount in cents"
+          param :paid_by_label, String,  desc: "'You' or the payer's name"
+        end
+        param :paid_by,             Hash,    desc: "The user who paid" do
+          param :id,     Integer, desc: "User ID"
+          param :name,   String,  desc: "Display name"
+          param :is_you, :bool,   desc: "True when the viewer is the payer"
+        end
+        param :account,             Hash,    desc: "Source account { id, name }" do
+          param :id,   Integer, desc: "Account ID"
+          param :name, String,  desc: "Account name"
+        end
+        param :transfer_to_account, Hash,    desc: "Destination account { id, name } for transfers, or null"
+        param :category,            Hash,    desc: "Category { id, name }, or null"
+        param :counterpart,         Hash,    desc: "The other party { id, name } for settlements, or null"
+        param :split_method,        String,  desc: "equal, exact, percentage, or shares (null for non-shared expenses)"
+        param :splits,              Array,   desc: "Split details for shared expenses, null otherwise" do
+          param :user,              Hash,    desc: "Participant" do
+            param :id,     Integer, desc: "User ID"
+            param :name,   String,  desc: "Display name"
+            param :is_you, :bool,   desc: "True when this split belongs to the viewer"
+          end
+          param :owed_amount_cents, Integer, desc: "Amount owed by this participant, in cents"
+          param :allocation_value,  Float,   desc: "Raw allocation value (null for equal splits)"
+          param :category,          Hash,    desc: "Participant's category { id, name }, or null"
+        end
       end
     end
     def show

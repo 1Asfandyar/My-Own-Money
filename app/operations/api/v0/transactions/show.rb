@@ -24,7 +24,7 @@ module Api::V0::Transactions
 
       yield authorize?(txn)
 
-      formatted = yield Transaction::Feed.call([ txn ], current_user_id: current_user.id)
+      formatted = yield Transaction::Formatter.call([ txn ], current_user_id: current_user.id)
       Success(success: true, transaction: formatted.first)
     end
 
