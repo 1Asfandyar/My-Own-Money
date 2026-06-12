@@ -9,7 +9,7 @@
   "definitions": {
     "group": {
       "type": "object",
-      "required": ["id", "name", "created_by_id", "members", "transactions", "created_at", "updated_at"],
+      "required": ["id", "name", "created_by_id", "members", "transactions", "member_balances", "created_at", "updated_at"],
       "properties": {
         "id":            { "type": "integer" },
         "name":          { "type": "string" },
@@ -23,6 +23,7 @@
           "type": "array",
           "items": { "$ref": "#/definitions/transaction" }
         },
+        "member_balances": { "$ref": "#/definitions/member_balances" },
         "created_at": { "type": "string" },
         "updated_at": { "type": "string" }
       }
@@ -120,6 +121,47 @@
         "owed_amount_cents": { "type": "integer" },
         "allocation_value":  { "type": ["number", "null"] },
         "category":          { "oneOf": [{ "$ref": "#/definitions/category_ref" }, { "type": "null" }] }
+      }
+    },
+    "balance": {
+      "type": "object",
+      "required": ["type", "amount_cents"],
+      "properties": {
+        "type":         { "type": "string", "enum": ["owes_you", "you_owe", "settled_up"] },
+        "amount_cents": { "type": "integer" }
+      }
+    },
+    "member_balance_entry": {
+      "type": "object",
+      "required": ["from_user", "to_user", "amount_cents"],
+      "properties": {
+        "from_user": {
+          "type": "object",
+          "required": ["id", "name", "is_you"],
+          "properties": {
+            "id":     { "type": "integer" },
+            "name":   { "type": "string" },
+            "is_you": { "type": "boolean" }
+          }
+        },
+        "to_user": {
+          "type": "object",
+          "required": ["id", "name", "is_you"],
+          "properties": {
+            "id":     { "type": "integer" },
+            "name":   { "type": "string" },
+            "is_you": { "type": "boolean" }
+          }
+        },
+        "amount_cents": { "type": "integer" }
+      }
+    },
+    "member_balances": {
+      "type": "object",
+      "required": ["overall", "per_member"],
+      "properties": {
+        "overall":    { "$ref": "#/definitions/balance" },
+        "per_member": { "type": "array", "items": { "$ref": "#/definitions/member_balance_entry" } }
       }
     }
   }

@@ -15,17 +15,15 @@ module Api::V0::Groups
       @group = current_user.groups.find_by(id: params[:id])
       return Failure(:not_found) unless group
 
-      transactions = yield Transaction::Query.call(
-        current_user: current_user,
-        group_id:     group.id,
-        per_page:     nil
-      )
-      formatted = yield Transaction::Formatter.call(transactions, current_user_id: current_user.id)
+      transactions    = yield Transaction::Query.call(current_user: current_user, group_id: group.id, per_page: nil)
+      formatted       = yield Transaction::Formatter.call(transactions, current_user_id: current_user.id)
+      member_balances = yield Groups::MemberBalances.call(group_id: group.id, current_user_id: current_user.id)
 
       Success(
         success: true,
         group: Api::V0::GroupSerializer.render_as_hash(group).merge(
-          transactions: formatted
+          transactions:    formatted,
+          member_balances: member_balances
         )
       )
     end

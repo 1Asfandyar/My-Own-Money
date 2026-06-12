@@ -76,6 +76,18 @@ module Api::V0
       Includes all group transactions visible to the authenticated user (transactions where the
       user is the creator, a split participant, or the settlee of a settlement).
 
+      Also includes `member_balances`: computed from shared expense transaction splits in this
+      group only (settlements excluded). Two fields:
+
+      - `overall` — the viewer's net position across all members.
+        type: `owes_you` | `you_owe` | `settled_up`; amount_cents is the absolute net.
+
+      - `per_member` — **all non-zero pairwise balances** in the group, not just pairs
+        involving the viewer. Direction is always `from_user` owes `to_user`. When the viewer
+        is on either side, `is_you: true` is set on that field so the frontend can render
+        "you" instead of the user's name. Third-party pairs (neither side is the viewer) have
+        `is_you: false` on both sides. Zero-net pairs are omitted.
+
       **TypeScript Types**
 
       ```typescript
@@ -94,6 +106,25 @@ module Api::V0
         updated_at: string; // ISO 8601
         members: Member[];
         transactions: Transaction[];
+        member_balances: MemberBalances;
+      };
+
+      type MemberBalances = {
+        overall: Balance;       // current viewer's net position
+        per_member: MemberBalanceEntry[]; // ALL non-zero pairwise balances in the group
+      };
+
+      type Balance = {
+        type: "owes_you" | "you_owe" | "settled_up";
+        amount_cents: number;
+      };
+
+      // from_user owes to_user. is_you flags the current viewer on either side.
+      // When is_you is true, render "you" instead of the user's name.
+      type MemberBalanceEntry = {
+        from_user: { id: number; name: string; is_you: boolean };
+        to_user:   { id: number; name: string; is_you: boolean };
+        amount_cents: number;
       };
 
       type Member = {
@@ -209,6 +240,25 @@ module Api::V0
             param :owed_amount_cents, Integer, desc: "Amount owed by this participant, in cents"
             param :allocation_value, Float, desc: "Raw allocation value (null for equal splits)"
             param :category, Hash, desc: "Participant's category { id, name }, or null"
+          end
+        end
+        param :member_balances, Hash, desc: "Balance summary for all member pairs in the group (group transactions only)" do
+          param :overall, Hash, desc: "Current viewer's net position across all group members" do
+            param :type, String, desc: "owes_you, you_owe, or settled_up"
+            param :amount_cents, Integer, desc: "Net amount in cents"
+          end
+          param :per_member, Array, desc: "All non-zero pairwise balances in the group (from_user owes to_user). Includes third-party pairs (not involving the viewer). is_you flags the viewer on either side." do
+            param :from_user, Hash, desc: "The user who owes" do
+              param :id, Integer, desc: "User ID"
+              param :name, String, desc: "Display name"
+              param :is_you, :bool, desc: "True when the viewer is the debtor"
+            end
+            param :to_user, Hash, desc: "The user who is owed" do
+              param :id, Integer, desc: "User ID"
+              param :name, String, desc: "Display name"
+              param :is_you, :bool, desc: "True when the viewer is the creditor"
+            end
+            param :amount_cents, Integer, desc: "Amount in cents"
           end
         end
       end
