@@ -78,8 +78,8 @@ module Api::V0
     api :GET, "/v0/friendships/:id", "Friendship ledger — full financial overview between two users"
     description <<~DESC
       Returns a complete financial overview for a single friendship: the friend's profile,
-      the overall net balance, a per-group balance breakdown, and a chronological activity
-      feed of every shared transaction that involves both users.
+      the overall net balance, a per-group balance breakdown, and a list of every shared
+      transaction that involves both users in the standard transaction shape.
 
       All financial computation is done server-side. The frontend only needs to map `type`
       strings to display labels.
@@ -91,14 +91,6 @@ module Api::V0
       | `owes_you` | The friend owes the current user |
       | `you_owe` | The current user owes the friend |
       | `settled_up` | No outstanding balance |
-
-      **Activity impact types**
-
-      | type | Meaning |
-      |---|---|
-      | `you_lent` | Current user paid; friend's share is what they owe |
-      | `you_borrowed` | Friend paid; current user's share is what they owe |
-      | `no_balance` | A third party paid; no bilateral debt between the two users |
 
       **TypeScript Types**
 
@@ -118,13 +110,13 @@ module Api::V0
         requested_by_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
-        friend: User;
+        friend: FriendUser;
         balance_summary: Balance;
         group_balances: GroupBalance[];
-        activity: ActivityItem[];
+        transactions: Transaction[];
       };
 
-      type User = {
+      type FriendUser = {
         id: number;
         full_name: string;
         email: string;
@@ -141,17 +133,44 @@ module Api::V0
         balance: Balance;
       };
 
-      type ActivityItem = {
-        transaction_id: number;
+      type Transaction = {
+        id: number;
+        type: "expense" | "income" | "transfer" | "settlement";
+        visibility: "personal" | "shared";
         title: string;
+        note: string | null;
+        date: string; // ISO 8601
+        currency: { code: string; symbol: string };
         amount_cents: number;
-        transaction_date: string; // ISO 8601
-        payer: User;
-        group: { id: number; name: string } | null;
-        balance_impact: {
-          type: "you_lent" | "you_borrowed" | "no_balance";
-          amount_cents: number;
-        };
+        render_as: "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
+        viewer_role: "owner" | "payer" | "participant" | "settler" | "settlee";
+        summary: Summary;
+        paid_by: UserWithIsYou;
+        account: { id: number; name: string };
+        transfer_to_account: { id: number; name: string } | null;
+        category: { id: number; name: string } | null;
+        counterpart: { id: number; name: string } | null;
+        split_method: string | null;
+        splits: Split[] | null;
+      };
+
+      type Summary = {
+        label: string;         // e.g. "you lent", "you owe", "you paid"
+        amount_cents: number;
+        paid_by_label: string; // "You" or payer's name
+      };
+
+      type UserWithIsYou = {
+        id: number;
+        name: string;
+        is_you: boolean;
+      };
+
+      type Split = {
+        user: UserWithIsYou;
+        owed_amount_cents: number;
+        allocation_value: number | null;
+        category: { id: number; name: string } | null;
       };
       ```
     DESC
@@ -183,22 +202,47 @@ module Api::V0
             param :amount_cents, Integer, desc: "Net balance in cents"
           end
         end
-        param :activity, Array, desc: "All shared transactions involving both users, newest first" do
-          param :transaction_id, Integer, desc: "Transaction ID"
+        param :transactions, Array, desc: "All shared transactions involving both users, newest first" do
+          param :id, Integer, desc: "Transaction ID"
+          param :type, String, desc: "One of: expense, income, transfer, settlement"
+          param :visibility, String, desc: "personal or shared"
           param :title, String, desc: "Transaction title"
-          param :amount_cents, Integer, desc: "Total transaction amount in cents"
-          param :transaction_date, String, desc: "ISO 8601 transaction date"
-          param :payer, Hash, desc: "User who paid for this transaction" do
+          param :note, String, desc: "Optional note (null if absent)"
+          param :date, String, desc: "ISO 8601 transaction date"
+          param :currency, Hash, desc: "{ code, symbol } of the transaction currency" do
+            param :code, String, desc: "Currency code (e.g. USD)"
+            param :symbol, String, desc: "Currency symbol (e.g. $)"
+          end
+          param :amount_cents, Integer, desc: "Full amount paid by the payer, in cents"
+          param :render_as, String, desc: "UI hint: shared_expense_payer or shared_expense_participant"
+          param :viewer_role, String, desc: "Viewer's role: payer or participant"
+          param :summary, Hash, desc: "Viewer-relative summary for display" do
+            param :label, String, desc: "Human-readable label (e.g. 'you lent', 'you owe')"
+            param :amount_cents, Integer, desc: "Viewer-relevant amount in cents"
+            param :paid_by_label, String, desc: "'You' or the payer's name"
+          end
+          param :paid_by, Hash, desc: "The user who paid" do
             param :id, Integer, desc: "User ID"
-            param :full_name, String, desc: "Full name"
+            param :name, String, desc: "Display name"
+            param :is_you, :bool, desc: "True when the viewer is the payer"
           end
-          param :group, Hash, desc: "Group this transaction belongs to (null for direct expenses)" do
-            param :id, Integer, desc: "Group ID"
-            param :name, String, desc: "Group name"
+          param :account, Hash, desc: "Source account { id, name }" do
+            param :id, Integer, desc: "Account ID"
+            param :name, String, desc: "Account name"
           end
-          param :balance_impact, Hash, desc: "Bilateral financial impact from the current user's perspective" do
-            param :type, String, desc: "you_lent | you_borrowed | no_balance"
-            param :amount_cents, Integer, desc: "Impact amount in cents (0 for no_balance)"
+          param :transfer_to_account, Hash, desc: "Always null for shared expenses"
+          param :category, Hash, desc: "Category { id, name }, or null"
+          param :counterpart, Hash, desc: "Always null for shared expenses"
+          param :split_method, String, desc: "equal, exact, percentage, or shares"
+          param :splits, Array, desc: "Split details for each participant" do
+            param :user, Hash, desc: "Participant" do
+              param :id, Integer, desc: "User ID"
+              param :name, String, desc: "Display name"
+              param :is_you, :bool, desc: "True when this split belongs to the viewer"
+            end
+            param :owed_amount_cents, Integer, desc: "Amount owed by this participant, in cents"
+            param :allocation_value, Float, desc: "Raw allocation value (null for equal splits)"
+            param :category, Hash, desc: "Participant's category { id, name }, or null"
           end
         end
       end

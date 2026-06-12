@@ -46,8 +46,9 @@ class Transaction::Query < ApplicationService
     @date_from        = date_from
     @date_to          = date_to
     @search           = search
+    # TODO: user peggy gem for pagination metadata instead of manual limit/offset
     @page             = (page || 1).to_i
-    @per_page         = (per_page || DEFAULT_PER_PAGE).to_i
+    @per_page         = per_page.nil? ? nil : (per_page || DEFAULT_PER_PAGE).to_i
 
     Success(build_scope)
   end
@@ -82,10 +83,9 @@ class Transaction::Query < ApplicationService
     scope = apply_date_filters(scope)
     scope = apply_search_filter(scope)
     scope = eager_load(scope)
-    # TODO: migrate to use paggy gem for pagination and remove manual offset/limit
-    scope.order(transaction_date: :desc)
-         .offset((@page - 1) * @per_page)
-         .limit(@per_page)
+    scope = scope.order(transaction_date: :desc)
+    return scope unless @per_page
+    scope.offset((@page - 1) * @per_page).limit(@per_page)
   end
 
   # Subquery intersection — both sides hit the indexed transaction_splits.user_id column.

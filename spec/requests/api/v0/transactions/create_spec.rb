@@ -1342,5 +1342,113 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         expect(response).to match_json_schema("error_response")
       end
     end
+
+    # ── Group shared expense ───────────────────────────────────────────────────
+
+    context "when creating a group shared expense (user is a group member)" do
+      let(:group)           { create(:group, created_by: user) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        create(:groups_user, group: group, user: user)
+        create(:groups_user, group: group, user: user2)
+        {
+          title:            "Group Dinner",
+          amount_cents:     4000,
+          transaction_type: "expense",
+          shared_by:        [ user.id, user2.id ],
+          split_method:     "equal",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date,
+          group_id:         group.id
+        }
+      end
+
+      it "returns 201 and matches schema" do
+        expect(response).to have_http_status(:created)
+        expect(response).to match_json_schema("transactions/create_response")
+      end
+
+      it "links the transaction to the group" do
+        t = Transaction.find_by(title: "Group Dinner")
+        expect(t).to be_present
+        expect(t.group_id).to eq(group.id)
+        expect(t.visibility_type).to eq("shared")
+      end
+
+      it "creates splits and debts as normal" do
+        t = Transaction.find_by(title: "Group Dinner")
+        expect(t.transaction_splits.count).to eq(2)
+        expect(Debt.find_by(from_user_id: user2.id, to_user_id: user.id)&.amount_cents).to eq(2000)
+      end
+    end
+
+    context "when group_id is provided but current user is not a group member" do
+      let(:other_user)      { create(:user) }
+      let(:group)           { create(:group, created_by: other_user) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        create(:groups_user, group: group, user: other_user)
+        create(:groups_user, group: group, user: user2)
+        {
+          title:            "Unauthorized Group Expense",
+          amount_cents:     2000,
+          transaction_type: "expense",
+          shared_by:        [ user2.id ],
+          split_method:     "equal",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date,
+          group_id:         group.id
+        }
+      end
+
+      it "returns 403" do
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context "when group_id does not exist" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        {
+          title:            "Ghost Group Expense",
+          amount_cents:     2000,
+          transaction_type: "expense",
+          shared_by:        [ user.id, user2.id ],
+          split_method:     "equal",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date,
+          group_id:         999_999
+        }
+      end
+
+      it "returns 404" do
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "when group_id is provided for a non-shared expense" do
+      let(:group)           { create(:group, created_by: user) }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:request_params) do
+        create(:groups_user, group: group, user: user)
+        {
+          title:            "Personal with group_id",
+          amount_cents:     1000,
+          transaction_type: "expense",
+          account_id:       account.id,
+          category_id:      category.id,
+          transaction_date: transaction_date,
+          group_id:         group.id
+        }
+      end
+
+      it "returns 422 and matches error schema" do
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to match_json_schema("error_response")
+      end
+    end
   end
 end

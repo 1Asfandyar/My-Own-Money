@@ -314,6 +314,9 @@ module Api::V0
 
         // for settlement (account_id required; category_id not required)
         settles_user_id?: number;         // required for settlement — the user being paid back
+
+        // for group shared expense (current user must be a member of the group)
+        group_id?: number;
       };
 
       // Output
@@ -337,9 +340,10 @@ module Api::V0
     param :user_shares, Array, required: false, desc: "Array of {user_id, share} objects (required for split_method exact, percentage, or shares)"
     param :split_method, String, required: false, desc: "Split method: equal, exact, percentage, shares (required when shared_by or user_shares present)"
     param :settles_user_id, Integer, required: false, desc: "User ID of the person being paid back (required for settlement)"
+    param :group_id,        Integer, required: false, desc: "Group ID to link a shared expense to — current user must be a member of the group"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
-    error code: 403, desc: "Forbidden — insufficient permissions"
-    error code: 404, desc: "Account, category, currency, or settles_user not found"
+    error code: 403, desc: "Forbidden — current user is not a member of the specified group"
+    error code: 404, desc: "Account, category, currency, group, or settles_user not found"
     error code: 422, desc: "Validation errors"
     returns code: 201, desc: "Transaction created" do
       param :success, :bool, desc: "Operation status"
