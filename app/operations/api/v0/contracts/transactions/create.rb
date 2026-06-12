@@ -22,6 +22,9 @@ module Api::V0::Contracts::Transactions
 
       # settlement fields
       optional(:settles_user_id).maybe(:integer)
+
+      # group transaction fields
+      optional(:group_id).maybe(:integer)
     end
 
     rule(:transaction_type) do
@@ -135,6 +138,15 @@ module Api::V0::Contracts::Transactions
       elsif method == "equal" && values[:user_shares]&.any?
         key(:user_shares).failure("must not be provided for equal split (use shared_by instead)")
       end
+    end
+
+    # --- group transaction ---
+
+    rule(:group_id) do
+      next if value.nil?
+      is_shared = values[:transaction_type] == "expense" &&
+                  (values[:shared_by]&.any? || values[:user_shares]&.any?)
+      key.failure("is only allowed for shared expenses") unless is_shared
     end
 
     # --- split_method: required for any shared expense ---

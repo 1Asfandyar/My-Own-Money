@@ -10,7 +10,7 @@ class Transaction::Shared::Create < ApplicationService
   #   shares:     share = relative share count
   def call(user:, split_method:, title:, amount_cents:,
            account:, category:, transaction_date:,
-           shared_by_users: nil, user_shares: nil, note: nil, currency: nil)
+           shared_by_users: nil, user_shares: nil, note: nil, currency: nil, group: nil)
     @user             = user
     @shared_by_users  = shared_by_users
     @user_shares      = user_shares
@@ -22,6 +22,7 @@ class Transaction::Shared::Create < ApplicationService
     @transaction_date = transaction_date
     @note             = note
     @currency         = currency
+    @group            = group
 
     persist
   end
@@ -30,7 +31,7 @@ class Transaction::Shared::Create < ApplicationService
 
   attr_reader :user, :shared_by_users, :user_shares, :split_method, :title,
               :amount_cents, :account, :category, :transaction_date, :note, :currency,
-              :transaction
+              :group, :transaction
 
   def persist
     debt_result = nil
@@ -68,7 +69,8 @@ class Transaction::Shared::Create < ApplicationService
       category:         category,
       transaction_date: transaction_date,
       note:             note,
-      currency:         currency || account.currency
+      currency:         currency || account.currency,
+      group:            group
     )
     update_account_balance(account: account, transaction_type: :expense, amount_cents: amount_cents)
     txn

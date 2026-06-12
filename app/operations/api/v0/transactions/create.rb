@@ -18,7 +18,10 @@ module Api::V0::Transactions
         # personal expense, income, and shared expense all use current_user's account/category
         yield find_account
         yield find_category
-        yield(equal_shared? ? find_shared_by_users : find_user_shares_users) if shared_expense?
+        if shared_expense?
+          yield(equal_shared? ? find_shared_by_users : find_user_shares_users)
+          yield find_group if params[:group_id].present?
+        end
       end
       yield find_currency
       yield persist
@@ -32,7 +35,7 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :account, :from_account, :to_account,
-                :category, :currency, :transaction, :shared_by_users, :settles_user
+                :category, :currency, :transaction, :shared_by_users, :settles_user, :group
 
     def transfer?
       params[:transaction_type] == "transfer"
@@ -87,6 +90,14 @@ module Api::V0::Transactions
       found_ids = User.where(id: user_ids).pluck(:id)
       missing   = user_ids - found_ids
       return Failure(errors: { user_shares: [ "contains unknown user IDs: #{missing.join(', ')}" ] }) if missing.any?
+
+      Success()
+    end
+
+    def find_group
+      @group = Group.find_by(id: params[:group_id])
+      return Failure(:not_found) unless @group
+      return Failure(:forbidden) unless @group.users.exists?(id: current_user.id)
 
       Success()
     end
@@ -167,7 +178,8 @@ module Api::V0::Transactions
         category:         category,
         transaction_date: parse_date,
         note:             params[:note],
-        currency:         currency
+        currency:         currency,
+        group:            group
       }
 
       extra = if equal_shared?
