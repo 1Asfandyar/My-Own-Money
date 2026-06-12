@@ -50,8 +50,8 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         expect(JSON.parse(response.body)["friendship"]["group_balances"]).to eq([])
       end
 
-      it "returns empty activity when no shared transactions" do
-        expect(JSON.parse(response.body)["friendship"]["activity"]).to eq([])
+      it "returns empty transactions when no shared transactions" do
+        expect(JSON.parse(response.body)["friendship"]["transactions"]).to eq([])
       end
     end
 
@@ -114,15 +114,17 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         expect(group_balances.first["balance"]["amount_cents"]).to eq(1500)
       end
 
-      it "returns the transaction in activity with you_lent impact" do
-        body     = JSON.parse(response.body)
-        activity = body["friendship"]["activity"]
-        expect(activity.size).to eq(1)
-        expect(activity.first["transaction_id"]).to eq(extra_setup[:txn].id)
-        expect(activity.first["payer"]["id"]).to eq(user.id)
-        expect(activity.first["group"]["id"]).to eq(extra_setup[:group].id)
-        expect(activity.first["balance_impact"]["type"]).to eq("you_lent")
-        expect(activity.first["balance_impact"]["amount_cents"]).to eq(1500)
+      it "returns the transaction with payer role and you_lent summary" do
+        body         = JSON.parse(response.body)
+        transactions = body["friendship"]["transactions"]
+        expect(transactions.size).to eq(1)
+        expect(transactions.first["id"]).to eq(extra_setup[:txn].id)
+        expect(transactions.first["render_as"]).to eq("shared_expense_payer")
+        expect(transactions.first["viewer_role"]).to eq("payer")
+        expect(transactions.first["paid_by"]["id"]).to eq(user.id)
+        expect(transactions.first["paid_by"]["is_you"]).to be true
+        expect(transactions.first["summary"]["label"]).to eq("you lent")
+        expect(transactions.first["summary"]["amount_cents"]).to eq(1500)
       end
     end
 
@@ -143,15 +145,17 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         { txn: txn }
       end
 
-      it "returns you_owe group balance and you_borrowed activity impact" do
-        body           = JSON.parse(response.body)
+      it "returns you_owe group balance and participant role with you_owe summary" do
+        body         = JSON.parse(response.body)
+        transactions = body["friendship"]["transactions"]
         group_balances = body["friendship"]["group_balances"]
-        activity       = body["friendship"]["activity"]
         expect(group_balances.first["balance"]["type"]).to eq("you_owe")
         expect(group_balances.first["balance"]["amount_cents"]).to eq(1000)
-        expect(activity.first["transaction_id"]).to eq(extra_setup[:txn].id)
-        expect(activity.first["balance_impact"]["type"]).to eq("you_borrowed")
-        expect(activity.first["balance_impact"]["amount_cents"]).to eq(1000)
+        expect(transactions.first["id"]).to eq(extra_setup[:txn].id)
+        expect(transactions.first["render_as"]).to eq("shared_expense_participant")
+        expect(transactions.first["viewer_role"]).to eq("participant")
+        expect(transactions.first["summary"]["label"]).to eq("you owe")
+        expect(transactions.first["summary"]["amount_cents"]).to eq(1000)
       end
     end
 
@@ -176,11 +180,11 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         {}
       end
 
-      it "returns no_balance impact and excludes group from balances" do
-        body     = JSON.parse(response.body)
-        activity = body["friendship"]["activity"]
-        expect(activity.first["balance_impact"]["type"]).to eq("no_balance")
-        expect(activity.first["balance_impact"]["amount_cents"]).to eq(0)
+      it "returns participant role for the transaction and excludes group from balances" do
+        body         = JSON.parse(response.body)
+        transactions = body["friendship"]["transactions"]
+        expect(transactions.first["render_as"]).to eq("shared_expense_participant")
+        expect(transactions.first["viewer_role"]).to eq("participant")
         expect(body["friendship"]["group_balances"]).to eq([])
       end
     end
@@ -209,10 +213,10 @@ RSpec.describe "Api::V0::Friendships", type: :request do
         {}
       end
 
-      it "excludes the group from group_balances but includes both transactions in activity" do
+      it "excludes the group from group_balances but includes both transactions" do
         body = JSON.parse(response.body)
         expect(body["friendship"]["group_balances"]).to eq([])
-        expect(body["friendship"]["activity"].size).to eq(2)
+        expect(body["friendship"]["transactions"].size).to eq(2)
       end
     end
 
