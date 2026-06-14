@@ -21,6 +21,8 @@ admin.save!
 extra_admins = AdminUser.where.not(id: admin.id)
 warn "There are #{extra_admins.count} extra admin accounts. Remove them manually." if extra_admins.exists?
 
+
+test_users = []
 (1...5).each do |i|
   email = ENV.fetch("TEST_USER_EMAIL_#{i}", "test.user#{i}@rupeerally.com")
   password = ENV.fetch("TEST_USER_PASSWORD_#{i}", "password")
@@ -36,7 +38,31 @@ warn "There are #{extra_admins.count} extra admin accounts. Remove them manually
   end
 
   user.save!
+  test_users << user.reload
   Rails.logger.info "Test user ready: #{user.email}"
 end
 
+# make every test user friends with each other
+test_users.each do |user_a|
+  test_users.each do |user_b|
+    next if user_a == user_b
+
+    Friendship.find_or_create_by!(user_a: user_a, user_b: user_b) do |friendship|
+      friendship.requested_by = user_a
+      friendship.status = :accepted
+    end
+  end
+end
+
+# create a group for all test users
+group = Group.find_or_create_by!(name: "Test Group", created_by: test_users.first) do |g|
+  g.description = "A group for testing purposes"
+end
+
+test_users.each do |user|
+  GroupsUser.find_or_create_by!(group: group, user: user)
+end
+
 Rails.logger.info "Admin user ready: #{admin.email}"
+Rails.logger.info "Test users ready: #{test_users.map(&:email).join(', ')}"
+Rails.logger.info "Test group ready: #{group.name}"
