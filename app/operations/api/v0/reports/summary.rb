@@ -21,7 +21,7 @@ module Api::V0::Reports
 
       Success(
         success: true,
-        report: ::Reports::MonthlySummary.new(current_user, params[:month]).call
+        report: ::Reports::MonthlySummary.call(current_user, params[:month])
       )
     end
 
