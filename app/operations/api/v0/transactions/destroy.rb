@@ -32,6 +32,8 @@ module Api::V0::Transactions
         Transaction::Transfer::Destroy.call(transaction: transaction)
       elsif transaction.settlement?
         Transaction::Settlement::Destroy.call(transaction: transaction)
+      elsif transaction.shared?
+        Transaction::Shared::Destroy.call(transaction: transaction)
       else
         Transaction::Personal::Destroy.call(transaction: transaction)
       end

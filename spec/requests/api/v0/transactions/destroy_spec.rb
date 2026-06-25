@@ -118,6 +118,125 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    context "when deleting a shared expense (equal split)" do
+      let(:other_user)  { create(:user) }
+      let(:third_user)  { create(:user) }
+      let(:shared_transaction) do
+        create(:transaction, :shared,
+               user:             user,
+               account:          account,
+               category:         category,
+               currency:         currency,
+               split_method:     :equal,
+               amount_cents:     3000,
+               title:            "Shared dinner",
+               transaction_date: Time.current).tap do |txn|
+          # simulate what the service does on create
+          account.update!(current_balance_cents: -3000)
+          category.update!(balance_cents: 1000) # payer's share only
+          txn.transaction_splits.create!(user: user,       owed_amount_cents: 1000)
+          txn.transaction_splits.create!(user: other_user, owed_amount_cents: 1000)
+          txn.transaction_splits.create!(user: third_user, owed_amount_cents: 1000)
+          create(:debt, from_user: other_user, to_user: user, amount_cents: 1000)
+          create(:debt, from_user: third_user, to_user: user, amount_cents: 1000)
+        end
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{shared_transaction.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/destroy_response")
+      end
+
+      it "removes the shared transaction" do
+        expect(Transaction.find_by(id: shared_transaction.id)).to be_nil
+      end
+
+      it "reverts the payer's account balance" do
+        # account was -3000 after creation; revert full expense → 0
+        expect(account.reload.current_balance_cents).to eq(0)
+      end
+
+      it "reverts the payer's category balance" do
+        # category was 1000 (payer's share); revert → 0
+        expect(category.reload.balance_cents).to eq(0)
+      end
+
+      it "reverses the debt for other_user" do
+        debt = Debt.find_by(from_user_id: other_user.id, to_user_id: user.id)
+        expect(debt&.amount_cents).to eq(0)
+      end
+
+      it "reverses the debt for third_user" do
+        debt = Debt.find_by(from_user_id: third_user.id, to_user_id: user.id)
+        expect(debt&.amount_cents).to eq(0)
+      end
+
+      it "removes all transaction splits" do
+        expect(TransactionSplit.where(transaction_id: shared_transaction.id)).to be_empty
+      end
+    end
+
+    context "when deleting a shared expense (exact split) with partial existing debts" do
+      let(:other_user)  { create(:user) }
+      let(:shared_transaction) do
+        create(:transaction, :shared,
+               user:             user,
+               account:          account,
+               currency:         currency,
+               split_method:     :exact,
+               amount_cents:     10000,
+               title:            "Shared rent",
+               transaction_date: Time.current).tap do |txn|
+          account.update!(current_balance_cents: -10000)
+          txn.transaction_splits.create!(user: user,       owed_amount_cents: 6000)
+          txn.transaction_splits.create!(user: other_user, owed_amount_cents: 4000)
+          # other_user already owed payer 5000 before this expense; now owes 9000 total
+          create(:debt, from_user: other_user, to_user: user, amount_cents: 9000)
+        end
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{shared_transaction.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "nets the debt back down by the split amount" do
+        # 9000 - 4000 = 5000 (pre-existing debt restored)
+        debt = Debt.find_by(from_user_id: other_user.id, to_user_id: user.id)
+        expect(debt.amount_cents).to eq(5000)
+      end
+
+      it "reverts the payer's account balance" do
+        expect(account.reload.current_balance_cents).to eq(0)
+      end
+    end
+
+    context "when deleting a shared expense (percentage split) where debt direction flips" do
+      let(:other_user)  { create(:user) }
+      let(:shared_transaction) do
+        create(:transaction, :shared,
+               user:             user,
+               account:          account,
+               currency:         currency,
+               split_method:     :percentage,
+               amount_cents:     10000,
+               title:            "Shared trip",
+               transaction_date: Time.current).tap do |txn|
+          account.update!(current_balance_cents: -10000)
+          txn.transaction_splits.create!(user: user,       owed_amount_cents: 7000, allocation_value: 70)
+          txn.transaction_splits.create!(user: other_user, owed_amount_cents: 3000, allocation_value: 30)
+          # other_user only owed 2000 before; now they owe 5000 total — direction stays other_user → payer
+          create(:debt, from_user: other_user, to_user: user, amount_cents: 5000)
+        end
+      end
+      let(:endpoint)        { "/api/v0/transactions/#{shared_transaction.id}" }
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "reduces the debt by other_user's share (5000 - 3000 = 2000)" do
+        debt = Debt.find_by(from_user_id: other_user.id, to_user_id: user.id)
+        expect(debt.amount_cents).to eq(2000)
+      end
+    end
+
     context "when deleting a settlement transaction" do
       let(:user2)         { create(:user) }
       let(:user2_account) { create(:account, user: user2, currency: currency) }
