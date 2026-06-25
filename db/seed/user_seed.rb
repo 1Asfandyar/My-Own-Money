@@ -43,10 +43,8 @@ test_users = []
 end
 
 # make every test user friends with each other
-test_users.each do |user_a|
-  test_users.each do |user_b|
-    next if user_a == user_b
-
+test_users.each_with_index do |user_a, index_a|
+  test_users[index_a + 1..-1].each do |user_b|
     Friendship.find_or_create_by!(user_a: user_a, user_b: user_b) do |friendship|
       friendship.requested_by = user_a
       friendship.status = :accepted
