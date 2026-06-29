@@ -88,12 +88,17 @@ class Transaction::Query < ApplicationService
     scope.offset((@page - 1) * @per_page).limit(@per_page)
   end
 
-  # Subquery intersection — both sides hit the indexed transaction_splits.user_id column.
+  # Matches transactions shared between current_user and friend:
+  # shared expenses (friend appears in splits) OR settlements between the two.
   def apply_friend_filter(scope)
     return scope if friend_id.blank?
 
-    friend_tx_ids = TransactionSplit.where(user_id: friend_id).select(:transaction_id)
-    scope.where(id: friend_tx_ids)
+    friend_split_tx_ids = TransactionSplit.where(user_id: friend_id).select(:transaction_id)
+
+    scope.where(
+      "transactions.id IN (?) OR (transactions.user_id = ? AND transactions.settles_user_id = ?) OR (transactions.user_id = ? AND transactions.settles_user_id = ?)",
+      friend_split_tx_ids, friend_id, current_user.id, current_user.id, friend_id
+    )
   end
 
   def apply_scalar_filters(scope)

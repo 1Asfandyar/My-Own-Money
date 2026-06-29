@@ -220,6 +220,65 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       end
     end
 
+    context "when the current user paid a settlement targeting the friend" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:extra_setup) do
+        currency     = create(:currency)
+        user_account = create(:account, user: user, currency: currency)
+        txn = create(:transaction, :settlement, user: user, account: user_account,
+                     currency: currency, title: "Settled with Friend", settles_user: friend)
+        { txn: txn }
+      end
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("friendships/show_response")
+      end
+
+      it "includes the settlement in the transactions list" do
+        ids = JSON.parse(response.body)["friendship"]["transactions"].map { |t| t["id"] }
+        expect(ids).to include(extra_setup[:txn].id)
+      end
+    end
+
+    context "when the friend paid a settlement targeting the current user" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:extra_setup) do
+        currency       = create(:currency)
+        friend_account = create(:account, user: friend, currency: currency)
+        txn = create(:transaction, :settlement, user: friend, account: friend_account,
+                     currency: currency, title: "Friend Settled with Me", settles_user: user)
+        { txn: txn }
+      end
+
+      it "returns 200 and matches schema" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("friendships/show_response")
+      end
+
+      it "includes the settlement in the transactions list" do
+        ids = JSON.parse(response.body)["friendship"]["transactions"].map { |t| t["id"] }
+        expect(ids).to include(extra_setup[:txn].id)
+      end
+    end
+
+    context "when the friend paid a settlement targeting the current user, viewed from friend's side" do
+      let(:request_headers) { headers.merge(auth_headers(friend)) }
+      let(:extra_setup) do
+        currency       = create(:currency)
+        friend_account = create(:account, user: friend, currency: currency)
+        txn = create(:transaction, :settlement, user: friend, account: friend_account,
+                     currency: currency, title: "I Settled with User", settles_user: user)
+        { txn: txn }
+      end
+
+      it "returns 200 and includes the settlement from the payer's perspective" do
+        expect(response).to have_http_status(:ok)
+        ids = JSON.parse(response.body)["friendship"]["transactions"].map { |t| t["id"] }
+        expect(ids).to include(extra_setup[:txn].id)
+      end
+    end
+
     # FAILURE PATHS
     context "when unauthenticated" do
       it "returns 401 and matches error schema" do
