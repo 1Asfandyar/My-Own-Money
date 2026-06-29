@@ -17,10 +17,14 @@ module Api::V0::Contracts::Transactions
       optional(:currency_id).maybe(:integer)
 
       # shared expense fields
-      optional(:paid_by).maybe(:integer)
+      optional(:paid_by_id).maybe(:integer)
       optional(:shared_by).maybe(:array)
       optional(:user_shares).maybe(:array)
       optional(:split_method).maybe(:string)
+
+      # settlement fields
+      optional(:paid_by_account_id).maybe(:integer)
+      optional(:paid_to_account_id).maybe(:integer)
     end
 
     rule(:transaction_type) do

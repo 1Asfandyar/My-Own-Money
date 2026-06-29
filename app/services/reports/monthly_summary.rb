@@ -1,11 +1,17 @@
 module Reports
   class MonthlySummary < ApplicationService
-    def initialize(current_user, month_param = nil)
+    def call(current_user, month_param = nil)
       @current_user = current_user
-      @month        = parse_month(month_param)
+      @month = parse_month(month_param)
+
+      monthly_report
     end
 
-    def call
+    private
+
+    attr_reader :current_user, :month
+
+    def monthly_report
       {
         period:               period_label,
         overview:             overview,
@@ -16,10 +22,6 @@ module Reports
         trend:                trend
       }
     end
-
-    private
-
-    attr_reader :current_user, :month
 
     def parse_month(param)
       return Date.current.beginning_of_month if param.blank?

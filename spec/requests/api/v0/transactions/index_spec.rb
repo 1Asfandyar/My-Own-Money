@@ -245,6 +245,49 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
+    context "when filtered by friend_id and current user paid a settlement targeting the friend" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:friend)          { create(:user) }
+      let(:request_params)  { { friend_id: friend.id } }
+
+      before do
+        create(:transaction, :settlement, user: user, account: account,
+               currency: currency, title: "I Settled with Friend", settles_user: friend)
+        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and includes the settlement" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("I Settled with Friend")
+        expect(titles).not_to include("My Personal")
+      end
+    end
+
+    context "when filtered by friend_id and the friend paid a settlement targeting the current user" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:friend)          { create(:user) }
+      let(:friend_account)  { create(:account, user: friend, currency: currency) }
+      let(:request_params)  { { friend_id: friend.id } }
+
+      before do
+        create(:transaction, :settlement, user: friend, account: friend_account,
+               currency: currency, title: "Friend Settled with Me", settles_user: user)
+        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+        get endpoint, params: request_params, headers: request_headers
+      end
+
+      it "returns 200 and includes the settlement" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("transactions/index_response")
+        titles = JSON.parse(response.body)["transactions"].map { |t| t["title"] }
+        expect(titles).to include("Friend Settled with Me")
+        expect(titles).not_to include("My Personal")
+      end
+    end
+
     context "when paginated with per_page" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { per_page: 2, page: 1 } }

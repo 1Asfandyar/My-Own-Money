@@ -78,6 +78,10 @@ class User < ApplicationRecord
       .distinct
   end
 
+  def preferred_account
+    default_account || accounts.first
+  end
+
   def admin?
     role == "admin"
   end

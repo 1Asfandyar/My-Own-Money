@@ -3,15 +3,16 @@
 class Transaction::Settlement::Create < ApplicationService
   include Transaction::Helpers
 
-  # settler:      User who is paying (the debtor)
-  # settles_user: User being paid (the creditor)
-  def call(settler:, settles_user:, title:, amount_cents:, account:, transaction_date:,
-           note: nil, currency: nil)
-    @settler          = settler
-    @settles_user     = settles_user
+  # paid_by_user: User who is paying (the debtor)
+  # paid_to_user: User being paid (the creditor)
+  def call(paid_by_user:, paid_to_user:, title:, amount_cents:, paid_by_account:,
+           paid_to_account:, transaction_date:, note: nil, currency: nil)
+    @paid_by_user     = paid_by_user
+    @paid_to_user     = paid_to_user
     @title            = title
     @amount_cents     = amount_cents
-    @account          = account
+    @paid_by_account  = paid_by_account
+    @paid_to_account  = paid_to_account
     @transaction_date = transaction_date
     @note             = note
     @currency         = currency
@@ -20,40 +21,37 @@ class Transaction::Settlement::Create < ApplicationService
 
   private
 
-  attr_reader :settler, :settles_user, :title, :amount_cents, :account,
-              :transaction_date, :note, :currency, :transaction
+  attr_reader :paid_by_user, :paid_to_user, :title, :amount_cents, :paid_by_account,
+              :paid_to_account, :transaction_date, :note, :currency, :transaction
 
   def persist
     debt_result = nil
 
     ActiveRecord::Base.transaction do
       @transaction = Transaction.create!(
-        user:             settler,
-        settles_user:     settles_user,
+        user:             paid_by_user,
+        settles_user:     paid_to_user,
         transaction_type: :settlement,
         visibility_type:  :shared,
         title:            title,
         amount_cents:     amount_cents,
-        account:          settler_default_account,
+        account:          paid_by_account,
+        transfer_account: paid_to_account,
         transaction_date: transaction_date,
         note:             note,
-        currency:         currency || account.currency
+        currency:         currency || paid_by_account.currency
       )
 
-      # for Payer (settler), settlement is an expense → balance decreases
-      # reduce the balance of payer's account by the settlement amount
-      # for now there is no category for settlement
-      update_account_balance(account: settler_default_account, transaction_type: :expense, amount_cents: amount_cents)
+      # paid_by_user is paying out → balance decreases
+      update_account_balance(account: paid_by_account, transaction_type: :expense, amount_cents: amount_cents)
 
-      # for Debtor (settles_user), settlement is an income → balance increases
-      update_account_balance(account: settles_user.default_account, transaction_type: :income, amount_cents: amount_cents)
+      # paid_to_user is receiving → balance increases
+      update_account_balance(account: paid_to_account, transaction_type: :income, amount_cents: amount_cents)
 
-      # Reduce the debt: settler owes settles_user some amount.
-      # Calling with debtor=settles_user and payer=settler triggers adjust_reverse_debt
-      # which subtracts amount_cents from the existing settler→settles_user debt.
+      # Reduce the debt: paid_by_user owes paid_to_user some amount.
       debt_result = Debts::UpdateBalance.call(
-        debtor_user:  settles_user,
-        payer_user:   settler,
+        debtor_user:  paid_to_user,
+        payer_user:   paid_by_user,
         amount_cents: amount_cents
       )
 
@@ -65,9 +63,5 @@ class Transaction::Settlement::Create < ApplicationService
     Success(transaction)
   rescue ActiveRecord::RecordInvalid => e
     Failure(errors: e.record.errors.to_hash)
-  end
-
-  def settler_default_account
-    @settler_default_account ||= @account || settler.default_account
   end
 end

@@ -11,13 +11,14 @@ module Api::V0::Transactions
       yield find_transaction
 
       if transaction.settlement?
-        yield find_account  if params.key?(:account_id)
-        yield find_currency if params.key?(:currency_id)
+        yield find_paid_by_account if params.key?(:paid_by_account_id) && paid_by_calling?
+        yield find_paid_to_account if params.key?(:paid_to_account_id)
+        yield find_currency        if params.key?(:currency_id)
         yield persist_settlement
       elsif shared_expense?
         yield validate_split_method_change
         yield validate_exact_split_sum if exact_split_with_user_shares?
-        yield find_paid_by_user        if params.key?(:paid_by)
+        yield find_paid_by_user        if params.key?(:paid_by_id)
         yield find_account_for_payer   if params.key?(:account_id)
         yield find_category_for_payer  if params.key?(:category_id)
         yield find_split_participants  if split_participants_provided?
@@ -43,7 +44,13 @@ module Api::V0::Transactions
 
     attr_reader :current_user, :params, :transaction, :account,
                 :from_account, :to_account, :category, :currency,
-                :paid_by_user, :shared_by_users
+                :paid_by_user, :shared_by_users, :paid_by_account, :paid_to_account
+
+    # --- role helpers ---
+
+    def paid_by_calling?
+      current_user.id == transaction.user_id
+    end
 
     # --- type helpers ---
 
@@ -79,8 +86,6 @@ module Api::V0::Transactions
 
     # --- shared expense validations ---
 
-    # When the split method changes, participants must be explicitly provided
-    # because the old allocation_value data cannot be reliably converted.
     def validate_split_method_change
       return Success() unless params.key?(:split_method) && params[:split_method].present?
 
@@ -96,8 +101,6 @@ module Api::V0::Transactions
       Success()
     end
 
-    # Contract cannot check exact-split sums without knowing the effective amount,
-    # so this operation-level step validates it against the transaction's current amount.
     def validate_exact_split_sum
       effective_amount = params[:amount_cents] || transaction.amount_cents
       total = params[:user_shares].sum { |s| s[:share] }
@@ -109,11 +112,10 @@ module Api::V0::Transactions
     # --- finders for shared expense ---
 
     def find_paid_by_user
-      @paid_by_user = User.find_by(id: params[:paid_by])
+      @paid_by_user = User.find_by(id: params[:paid_by_id])
       @paid_by_user ? Success() : Failure(:not_found)
     end
 
-    # Account must belong to the effective payer (new or existing).
     def find_account_for_payer
       @account = effective_payer.accounts.find_by(id: params[:account_id])
       @account ? Success() : Failure(:not_found)
@@ -141,6 +143,18 @@ module Api::V0::Transactions
       return Failure(errors: { user_shares: [ "contains unknown user IDs: #{missing.join(', ')}" ] }) if missing.any?
 
       Success()
+    end
+
+    # --- finders for settlement ---
+
+    def find_paid_by_account
+      @paid_by_account = transaction.user.accounts.find_by(id: params[:paid_by_account_id])
+      @paid_by_account ? Success() : Failure(:not_found)
+    end
+
+    def find_paid_to_account
+      @paid_to_account = transaction.settles_user.accounts.find_by(id: params[:paid_to_account_id])
+      @paid_to_account ? Success() : Failure(:not_found)
     end
 
     # --- finders for personal / transfer ---
@@ -171,6 +185,8 @@ module Api::V0::Transactions
 
     def find_transaction
       @transaction = current_user.transactions.find_by(id: params[:id])
+      # paid_to_user can also update their receive account on a settlement
+      @transaction ||= Transaction.settlement.find_by(id: params[:id], settles_user_id: current_user.id)
       @transaction ? Success() : Failure(:not_found)
     end
 
@@ -198,7 +214,8 @@ module Api::V0::Transactions
       service_attrs = {}
       service_attrs[:title]            = params[:title]                        if params.key?(:title)
       service_attrs[:amount_cents]     = params[:amount_cents]                 if params.key?(:amount_cents)
-      service_attrs[:account]          = account                               if account
+      service_attrs[:paid_by_account]  = paid_by_account                      if paid_by_account
+      service_attrs[:paid_to_account]  = paid_to_account                      if paid_to_account
       service_attrs[:transaction_date] = Time.parse(params[:transaction_date]) if params.key?(:transaction_date)
       service_attrs[:note]             = params[:note]                         if params.key?(:note)
       service_attrs[:currency]         = currency                              if currency

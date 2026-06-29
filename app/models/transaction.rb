@@ -69,6 +69,7 @@ class Transaction < ApplicationRecord
   end
 
   def transfer_accounts_must_differ
+    return unless transfer?
     errors.add(:transfer_account_id, "must be different") if transfer_account_id == account_id
   end
 end

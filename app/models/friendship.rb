@@ -32,7 +32,7 @@ class Friendship < ApplicationRecord
 
   validates :status, presence: true
   validate  :users_must_differ
-  validate  :user_a_must_have_smaller_id
+  validate  :users_must_be_ordered
 
   scope :accepted, -> { where(status: :accepted) }
   scope :pending,  -> { where(status: :pending) }
@@ -48,12 +48,12 @@ class Friendship < ApplicationRecord
   private
 
   def users_must_differ
+    return if user_a_id.nil? || user_b_id.nil?
     errors.add(:user_b_id, "must be different from user_a") if user_a_id == user_b_id
   end
 
-  def user_a_must_have_smaller_id
-    return if user_a_id.blank? || user_b_id.blank?
-
-    errors.add(:user_a_id, "must be the smaller ID") if user_a_id > user_b_id
+  def users_must_be_ordered
+    return if user_a_id.nil? || user_b_id.nil?
+    errors.add(:user_a_id, "must be less than user_b_id") if user_a_id >= user_b_id
   end
 end

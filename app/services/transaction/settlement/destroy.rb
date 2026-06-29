@@ -14,22 +14,23 @@ class Transaction::Settlement::Destroy < ApplicationService
 
   def reverse
     ActiveRecord::Base.transaction do
-      # Revert settler's account balance (settlement was recorded as expense for settler)
+      paid_to_account = transaction.transfer_account || transaction.settles_user.preferred_account
+
+      # Revert paid_by_user's account balance (settlement was recorded as expense)
       revert_account_balance(
         account:          transaction.account,
         transaction_type: :expense,
         amount_cents:     transaction.amount_cents
       )
 
-      # Revert settles_user's account balance (settlement was recorded as income for settles_user)
+      # Revert paid_to_user's account balance (settlement was recorded as income)
       revert_account_balance(
-        account:          transaction.settles_user.default_account,
+        account:          paid_to_account,
         transaction_type: :income,
         amount_cents:     transaction.amount_cents
       )
 
       # Restore the debt that was reduced when the settlement was created.
-      # settler (transaction.user) originally owed settles_user (transaction.settles_user).
       debt_result = Debts::UpdateBalance.call(
         debtor_user:  transaction.user,
         payer_user:   transaction.settles_user,

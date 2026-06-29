@@ -8,6 +8,7 @@ class CreateFriendships < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
+    add_check_constraint :friendships, "user_a_id < user_b_id"
     add_index :friendships, [:user_a_id, :user_b_id], unique: true
   end
 end
