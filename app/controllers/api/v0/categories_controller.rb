@@ -8,12 +8,19 @@ module Api::V0
 
     api :GET, "/v0/categories", "List all categories for the current user"
     description <<~DESC
-      Returns all categories belonging to the authenticated user. New users receive predefined categories automatically.
+      Returns categories belonging to the authenticated user. New users receive predefined categories automatically.
+
+      By default only categories with a non-zero balance are returned. Pass `include_zero_balance=true` to get all categories regardless of balance. All filters are optional and can be combined freely.
 
       **TypeScript Types**
 
       ```typescript
-      // Input: none (authenticated via JWT header)
+      // Input (all optional, combinable)
+      type Params = {
+        include_zero_balance?: boolean;        // default false — only non-zero balance
+        category_type?: 'expense' | 'income';  // filter by type; omit for both
+        name?: string;                          // case-insensitive partial name match
+      };
 
       // Output
       type Response = {
@@ -34,8 +41,15 @@ module Api::V0
       };
       ```
     DESC
+    param :include_zero_balance, :bool, required: false,
+          description: "Include categories with zero balance (default: false)"
+    param :category_type, String, required: false,
+          description: "Filter by type: 'expense' or 'income'. Omit to return both."
+    param :name, String, required: false,
+          description: "Case-insensitive partial match on category name"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
+    error code: 422, desc: "Invalid filter value (e.g. unrecognised category_type)"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
       param :categories, Array, desc: "List of categories" do
