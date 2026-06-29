@@ -12,8 +12,10 @@ module Api::V0::Transactions
         yield find_from_account
         yield find_to_account
       elsif settlement?
-        yield find_settles_user
-        yield find_account
+        yield find_paid_by_user
+        yield find_paid_to_user
+        yield find_paid_by_account
+        yield find_paid_to_account
       else
         # personal expense, income, and shared expense all use current_user's account/category
         yield find_account
@@ -35,7 +37,8 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :account, :from_account, :to_account,
-                :category, :currency, :transaction, :shared_by_users, :settles_user, :group
+                :category, :currency, :transaction, :shared_by_users, :paid_to_user, :group,
+                :paid_by_user, :paid_by_account, :paid_to_account
 
     def transfer?
       params[:transaction_type] == "transfer"
@@ -74,9 +77,34 @@ module Api::V0::Transactions
       @to_account ? Success() : Failure(:not_found)
     end
 
-    def find_settles_user
-      @settles_user = User.find_by(id: params[:settles_user_id])
-      @settles_user ? Success() : Failure(:not_found)
+    def find_paid_by_user
+      @paid_by_user = User.find_by(id: params[:paid_by_id])
+      @paid_by_user ? Success() : Failure(:not_found)
+    end
+
+    def find_paid_to_user
+      @paid_to_user = User.find_by(id: params[:paid_to_id])
+      @paid_to_user ? Success() : Failure(:not_found)
+    end
+
+    def find_paid_by_account
+      if params[:paid_by_account_id].present?
+        @paid_by_account = paid_by_user.accounts.find_by(id: params[:paid_by_account_id])
+        return @paid_by_account ? Success() : Failure(:not_found)
+      end
+
+      @paid_by_account = paid_by_user.preferred_account
+      @paid_by_account ? Success() : Failure(errors: { paid_by_account_id: [ "paid_by user has no accounts" ] })
+    end
+
+    def find_paid_to_account
+      if params[:paid_to_account_id].present?
+        @paid_to_account = paid_to_user.accounts.find_by(id: params[:paid_to_account_id])
+        return @paid_to_account ? Success() : Failure(:not_found)
+      end
+
+      @paid_to_account = paid_to_user.preferred_account
+      @paid_to_account ? Success() : Failure(errors: { paid_to_account_id: [ "paid_to user has no accounts" ] })
     end
 
     def find_shared_by_users
@@ -123,11 +151,12 @@ module Api::V0::Transactions
 
     def persist_settlement
       result = Transaction::Settlement::Create.call(
-        settler:          current_user,
-        settles_user:     settles_user,
+        paid_by_user:     paid_by_user,
+        paid_to_user:     paid_to_user,
         title:            params[:title],
         amount_cents:     params[:amount_cents],
-        account:          account,
+        paid_by_account:  paid_by_account,
+        paid_to_account:  paid_to_account,
         transaction_date: parse_date,
         note:             params[:note],
         currency:         currency

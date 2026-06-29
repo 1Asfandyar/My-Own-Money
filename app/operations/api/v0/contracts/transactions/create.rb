@@ -21,7 +21,10 @@ module Api::V0::Contracts::Transactions
       optional(:split_method).maybe(:string)
 
       # settlement fields
-      optional(:settles_user_id).maybe(:integer)
+      optional(:paid_by_id).maybe(:integer)
+      optional(:paid_to_id).maybe(:integer)
+      optional(:paid_by_account_id).maybe(:integer)
+      optional(:paid_to_account_id).maybe(:integer)
 
       # group transaction fields
       optional(:group_id).maybe(:integer)
@@ -47,6 +50,7 @@ module Api::V0::Contracts::Transactions
 
     rule(:account_id) do
       next if values[:transaction_type] == "transfer"
+      next if values[:transaction_type] == "settlement"
       key.failure("is required") if value.nil?
     end
 
@@ -58,9 +62,20 @@ module Api::V0::Contracts::Transactions
 
     # --- settlement ---
 
-    rule(:settles_user_id) do
+    rule(:paid_to_id) do
       next unless values[:transaction_type] == "settlement"
       key.failure("is required for settlement") if value.nil?
+    end
+
+    rule(:paid_by_id) do
+      next unless values[:transaction_type] == "settlement"
+      key.failure("is required for settlement") if value.nil?
+    end
+
+    rule(:paid_by_id, :paid_to_id) do
+      next unless values[:transaction_type] == "settlement"
+      next if values[:paid_by_id].nil? || values[:paid_to_id].nil?
+      key(:paid_by_id).failure("must be different from paid_to_id") if values[:paid_by_id] == values[:paid_to_id]
     end
 
     # --- transfer ---

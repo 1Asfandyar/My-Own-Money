@@ -487,7 +487,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when paid_by user does not exist on a shared expense" do
       let(:endpoint)        { "/api/v0/transactions/#{shared_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:request_params)  { { paid_by: 999_999 } }
+      let(:request_params)  { { paid_by_id: 999_999 } }
 
       it "returns 404 and matches error schema" do
         expect(response).to have_http_status(:not_found)

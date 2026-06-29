@@ -274,11 +274,15 @@ module Api::V0
         - `account_id` and `category_id` must belong to the current user.
         - The current user's category balance is updated by their own share amount.
         - `transaction_date` defaults to today if omitted.
-      For **settlement** transactions: provide `account_id` and `settles_user_id` (the user being paid back).
-        - Records that the current user paid `settles_user_id` the given `amount_cents`.
-        - Reduces the debt between the current user and `settles_user_id` by `amount_cents`.
+      For **settlement** transactions: provide `paid_by_id` and `paid_to_id` (both required).
+        - `paid_by_id` is the user ID of who actually paid (the debtor); does not have to be the current user.
+        - `paid_to_id` is the user ID of who is being paid back (the creditor).
+        - `paid_by_account_id` is optional — must belong to the `paid_by_id` user; defaults to their default account.
+        - `paid_to_account_id` is optional — must belong to the `paid_to_id` user; defaults to their default account.
+        - Records that `paid_by_id` user paid `paid_to_id` the given `amount_cents`.
+        - Reduces the debt between `paid_by_id` and `paid_to_id` by `amount_cents`.
         - `category_id` is not required for settlements.
-        - Settlement transactions cannot be updated — delete and re-create if correction is needed.
+        - `paid_by_id` and `paid_to_id` must be different users.
 
       **TypeScript Types**
 
@@ -312,8 +316,11 @@ module Api::V0
         }>;
         split_method?: "equal" | "exact" | "percentage" | "shares"; // required when shared_by or user_shares present
 
-        // for settlement (account_id required; category_id not required)
-        settles_user_id?: number;         // required for settlement — the user being paid back
+        // for settlement
+        paid_by_id?: number;              // required for settlement — the user who paid (the debtor)
+        paid_to_id?: number;              // required for settlement — the user being paid back (the creditor)
+        paid_by_account_id?: number;      // optional: must belong to paid_by_id user; defaults to their default account
+        paid_to_account_id?: number;      // optional: must belong to paid_to_id user; defaults to their default account
 
         // for group shared expense (current user must be a member of the group)
         group_id?: number;
@@ -332,18 +339,21 @@ module Api::V0
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date (defaults to today)"
     param :note, String, required: false, desc: "Optional note"
     param :currency_id, Integer, required: false, desc: "Currency ID (defaults to account currency)"
-    param :account_id, Integer, required: false, desc: "Account ID — required for income, expense (personal & shared), and settlement; belongs to current user"
+    param :account_id, Integer, required: false, desc: "Account ID — required for income/expense; not used for settlement (use paid_by_account_id instead)"
     param :category_id, Integer, required: false, desc: "Category ID — required for income and expense (personal & shared); not required for settlement; belongs to current user"
+    param :paid_by_id, Integer, required: false, desc: "User ID of who paid (the debtor) — required for settlement; does not have to be the current user; must differ from paid_to_id"
+    param :paid_to_id, Integer, required: false, desc: "User ID of who is being paid back (the creditor) — required for settlement"
+    param :paid_by_account_id, Integer, required: false, desc: "Account ID for the paying user — optional for settlement; must belong to paid_by_id user; defaults to their default account"
+    param :paid_to_account_id, Integer, required: false, desc: "Account ID for the receiving user — optional for settlement; must belong to paid_to_id user; defaults to their default account"
     param :from_account_id, Integer, required: false, desc: "Source account ID (required for transfer)"
     param :to_account_id, Integer, required: false, desc: "Destination account ID (required for transfer)"
     param :shared_by, Array, required: false, desc: "Array of user IDs sharing the expense (required for split_method equal)"
     param :user_shares, Array, required: false, desc: "Array of {user_id, share} objects (required for split_method exact, percentage, or shares)"
     param :split_method, String, required: false, desc: "Split method: equal, exact, percentage, shares (required when shared_by or user_shares present)"
-    param :settles_user_id, Integer, required: false, desc: "User ID of the person being paid back (required for settlement)"
     param :group_id,        Integer, required: false, desc: "Group ID to link a shared expense to — current user must be a member of the group"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — current user is not a member of the specified group"
-    error code: 404, desc: "Account, category, currency, group, or settles_user not found"
+    error code: 404, desc: "Account, category, currency, group, or paid_to user not found"
     error code: 422, desc: "Validation errors"
     returns code: 201, desc: "Transaction created" do
       param :success, :bool, desc: "Operation status"
@@ -358,7 +368,7 @@ module Api::V0
         param :account_id, Integer, desc: "Account ID"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
-        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
+        param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
@@ -381,9 +391,10 @@ module Api::V0
       For transfers, updating `from_account_id` or `to_account_id` changes the linked accounts.
       Changing `transaction_type` between personal and transfer types is supported.
 
-      **Settlement transactions** support updating `title`, `amount_cents`, `account_id`,
-      `transaction_date`, `note`, and `currency_id`. Changing `transaction_type` or
-      `settles_user_id` on a settlement is not supported.
+      **Settlement transactions** support updating `title`, `amount_cents`, `paid_by_account_id`,
+      `paid_to_account_id`, `transaction_date`, `note`, and `currency_id`.
+      The `paid_by_id` user can update any of those fields. The `paid_to_id` user can only update
+      `paid_to_account_id`. Changing `transaction_type`, `paid_by_id`, or `paid_to_id` is not supported.
 
       **TypeScript Types**
 
@@ -437,7 +448,7 @@ module Api::V0
         param :account_id, Integer, desc: "Account ID"
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers)"
-        param :settles_user_id, Integer, desc: "User ID being paid back (nil unless settlement)"
+        param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
         param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
