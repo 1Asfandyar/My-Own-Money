@@ -13,6 +13,8 @@ vendor/bundle/
 /.env*
 !/.env*.erb
 !/.env.example
+!/.env.production.example
+!/.env.development.example
 
 # Ignore all logfiles and tempfiles.
 /log/*
@@ -42,7 +44,8 @@ vendor/bundle/
 /config/credentials/*.key
 
 # Kamal secrets (NEVER commit real secrets)
-/.kamal/secrets
+/.kamal/secrets*
+!/.kamal/secrets*.example
 
 # RuboCop cache
 /.rubocop-https?--*

@@ -1,0 +1,81 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+
+# Only one deploy per environment at a time.
+concurrency:
+  group: deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+
+    # Resolves secrets from the matching GitHub Environment (production or development).
+    # Required approval gates, if configured on the environment, are enforced here.
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # ── SSH ─────────────────────────────────────────────────────────────────
+      # SSH_PRIVATE_KEY  — private key whose public half is in authorized_keys on the server
+      # SSH_KNOWN_HOSTS  — output of: ssh-keyscan -H <server-ip>
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
+      # ── Secrets file ────────────────────────────────────────────────────────
+      # Write .env.<environment> from GitHub Environment secrets so Kamal can
+      # source it via .kamal/secrets.<environment>. Using printf+env vars instead
+      # of direct ${{ secrets.X }} interpolation avoids shell-injection from
+      # values that contain special characters.
+      - name: Write .env.${{ github.event.inputs.environment }}
+        env:
+          KAMAL_REGISTRY_USERNAME: ${{ secrets.KAMAL_REGISTRY_USERNAME }}
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          {
+            printf 'KAMAL_REGISTRY_USERNAME=%s\n' "${KAMAL_REGISTRY_USERNAME}"
+            printf 'KAMAL_REGISTRY_PASSWORD=%s\n' "${KAMAL_REGISTRY_PASSWORD}"
+            printf 'RAILS_MASTER_KEY=%s\n'        "${RAILS_MASTER_KEY}"
+            printf 'DATABASE_URL=%s\n'             "${DATABASE_URL}"
+            printf 'POSTGRES_USER=%s\n'            "${POSTGRES_USER}"
+            printf 'POSTGRES_PASSWORD=%s\n'        "${POSTGRES_PASSWORD}"
+            printf 'GOOGLE_CLIENT_ID=%s\n'         "${GOOGLE_CLIENT_ID}"
+            printf 'GOOGLE_CLIENT_SECRET=%s\n'     "${GOOGLE_CLIENT_SECRET}"
+          } > .env.${{ github.event.inputs.environment }}
+
+      # The example file already contains `. .env.<environment>` — copy it as-is.
+      - name: Prepare Kamal secrets file
+        run: |
+          cp .kamal/secrets.${{ github.event.inputs.environment }}.example \
+             .kamal/secrets.${{ github.event.inputs.environment }}
+
+      - name: Deploy
+        run: bundle exec kamal deploy -d ${{ github.event.inputs.environment }}
