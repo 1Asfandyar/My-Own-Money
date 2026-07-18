@@ -24,6 +24,7 @@ namespace :api do
     end
 
     resources :friendships
+    get "dashboard", to: "dashboard#show"
 
     get "reports/summary", to: "reports#summary"
   end
