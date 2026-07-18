@@ -34,6 +34,7 @@ module Api::V0
         status: "pending" | "accepted" | "blocked";
         requested_by_id: number;
         friend: User;
+        balance: Balance;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
       };
@@ -44,8 +45,16 @@ module Api::V0
         mobile_number: string;
         email: string;
         role: string;
+        onboarding_completed: boolean;
+        currency_id: number;
+        currency_symbol: string | null;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
+      };
+
+      type Balance = {
+        type: "owes_you" | "you_owe" | "settled_up";
+        amount_cents: number;
       };
       ```
     DESC
@@ -62,7 +71,18 @@ module Api::V0
         param :friend, Hash, desc: "The other user in the friendship" do
           param :id, Integer, desc: "User ID"
           param :full_name, String, desc: "Full name"
+          param :mobile_number, String, desc: "Mobile number"
           param :email, String, desc: "Email address"
+          param :role, String, desc: "User role"
+          param :onboarding_completed, :bool, desc: "Whether onboarding is completed"
+          param :currency_id, Integer, desc: "Preferred currency ID"
+          param :currency_symbol, String, desc: "Preferred currency symbol (null when unavailable)"
+          param :created_at, String, desc: "ISO 8601 creation timestamp"
+          param :updated_at, String, desc: "ISO 8601 last-update timestamp"
+        end
+        param :balance, Hash, desc: "Net balance between current user and friend" do
+          param :type, String, desc: "owes_you | you_owe | settled_up"
+          param :amount_cents, Integer, desc: "Net amount in cents"
         end
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
