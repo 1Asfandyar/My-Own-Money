@@ -17,7 +17,7 @@ module JwtHelpers
       iat:  Time.current.to_i,
       exp:  1.day.from_now.to_i
     }
-    secret = Rails.application.secret_key_base
+    secret = ENV.fetch("SECRET_KEY_BASE") { Rails.application.secret_key_base }
     JWT.encode(payload, secret, "HS256")
   end
 
