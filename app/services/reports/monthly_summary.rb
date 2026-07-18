@@ -93,7 +93,7 @@ module Reports
     # ---------------------------------------------------------------------------
 
     def active_accounts
-      @active_accounts ||= current_user.accounts.where(is_archived: false).includes(:currency)
+      @active_accounts ||= current_user.accounts.where(is_archived: false)
     end
 
     def accounts_data
@@ -102,7 +102,7 @@ module Reports
           id:            account.id,
           name:          account.name,
           balance_cents: account.current_balance_cents,
-          currency_code: account.currency.code
+          currency_code: current_user.currency&.code
         }
       end
     end

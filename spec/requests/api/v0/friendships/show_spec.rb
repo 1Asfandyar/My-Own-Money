@@ -91,12 +91,12 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:extra_setup) do
         currency     = create(:currency)
-        user_account = create(:account, user: user, currency: currency)
+        user_account = create(:account, user: user)
         group        = create(:group, created_by: user)
         create(:groups_user, group: group, user: user)
         create(:groups_user, group: group, user: friend)
         txn = create(:transaction, :shared, user: user, group: group,
-                     account: user_account, currency: currency, amount_cents: 3000)
+                     account: user_account, amount_cents: 3000)
         create(:transaction_split, financial_transaction: txn, user: user,
                owed_amount_cents: 1500)
         create(:transaction_split, financial_transaction: txn, user: friend,
@@ -132,12 +132,12 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:extra_setup) do
         currency       = create(:currency)
-        friend_account = create(:account, user: friend, currency: currency)
+        friend_account = create(:account, user: friend)
         group          = create(:group, created_by: friend)
         create(:groups_user, group: group, user: user)
         create(:groups_user, group: group, user: friend)
         txn = create(:transaction, :shared, user: friend, group: group,
-                     account: friend_account, currency: currency, amount_cents: 2000)
+                     account: friend_account, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn, user: user,
                owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn, user: friend,
@@ -164,13 +164,13 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:extra_setup) do
         third_party         = create(:user)
         currency            = create(:currency)
-        third_party_account = create(:account, user: third_party, currency: currency)
+        third_party_account = create(:account, user: third_party)
         group               = create(:group, created_by: third_party)
         create(:groups_user, group: group, user: user)
         create(:groups_user, group: group, user: friend)
         create(:groups_user, group: group, user: third_party)
         txn = create(:transaction, :shared, user: third_party, group: group,
-                     account: third_party_account, currency: currency, amount_cents: 3000)
+                     account: third_party_account, amount_cents: 3000)
         create(:transaction_split, financial_transaction: txn, user: user,
                owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn, user: friend,
@@ -193,19 +193,19 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:extra_setup) do
         currency       = create(:currency)
-        user_account   = create(:account, user: user, currency: currency)
-        friend_account = create(:account, user: friend, currency: currency)
+        user_account   = create(:account, user: user)
+        friend_account = create(:account, user: friend)
         group          = create(:group, created_by: user)
         create(:groups_user, group: group, user: user)
         create(:groups_user, group: group, user: friend)
         txn1 = create(:transaction, :shared, user: user, group: group,
-                      account: user_account, currency: currency, amount_cents: 2000)
+                      account: user_account, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn1, user: user,
                owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn1, user: friend,
                owed_amount_cents: 1000)
         txn2 = create(:transaction, :shared, user: friend, group: group,
-                      account: friend_account, currency: currency, amount_cents: 2000)
+                      account: friend_account, amount_cents: 2000)
         create(:transaction_split, financial_transaction: txn2, user: user,
                owed_amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn2, user: friend,
@@ -224,9 +224,9 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:extra_setup) do
         currency     = create(:currency)
-        user_account = create(:account, user: user, currency: currency)
+        user_account = create(:account, user: user)
         txn = create(:transaction, :settlement, user: user, account: user_account,
-                     currency: currency, title: "Settled with Friend", settles_user: friend)
+                     title: "Settled with Friend", settles_user: friend)
         { txn: txn }
       end
 
@@ -245,9 +245,9 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:extra_setup) do
         currency       = create(:currency)
-        friend_account = create(:account, user: friend, currency: currency)
+        friend_account = create(:account, user: friend)
         txn = create(:transaction, :settlement, user: friend, account: friend_account,
-                     currency: currency, title: "Friend Settled with Me", settles_user: user)
+                     title: "Friend Settled with Me", settles_user: user)
         { txn: txn }
       end
 
@@ -266,9 +266,9 @@ RSpec.describe "Api::V0::Friendships", type: :request do
       let(:request_headers) { headers.merge(auth_headers(friend)) }
       let(:extra_setup) do
         currency       = create(:currency)
-        friend_account = create(:account, user: friend, currency: currency)
+        friend_account = create(:account, user: friend)
         txn = create(:transaction, :settlement, user: friend, account: friend_account,
-                     currency: currency, title: "I Settled with User", settles_user: user)
+                     title: "I Settled with User", settles_user: user)
         { txn: txn }
       end
 

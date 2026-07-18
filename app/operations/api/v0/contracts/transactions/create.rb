@@ -13,7 +13,6 @@ module Api::V0::Contracts::Transactions
       optional(:to_account_id).maybe(:integer)
       optional(:transaction_date).maybe(:string)
       optional(:note).maybe(:string)
-      optional(:currency_id).maybe(:integer)
 
       # shared expense fields
       optional(:shared_by).maybe(:array)   # equal split: array of user IDs

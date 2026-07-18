@@ -5,6 +5,5 @@ FactoryBot.define do
     initial_balance_cents { 0 }
     is_archived { false }
     association :user
-    association :currency
   end
 end

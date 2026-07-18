@@ -10,20 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_18_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "accounts", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "currency_id", null: false
     t.integer "current_balance_cents", default: 0, null: false
     t.integer "initial_balance_cents", default: 0, null: false
     t.boolean "is_archived", default: false, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index ["currency_id"], name: "index_accounts_on_currency_id"
     t.index ["user_id"], name: "index_accounts_on_user_id"
   end
 
@@ -130,7 +128,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
     t.integer "amount_cents", null: false
     t.bigint "category_id"
     t.datetime "created_at", null: false
-    t.bigint "currency_id", null: false
     t.bigint "group_id"
     t.text "note"
     t.bigint "settles_user_id"
@@ -144,7 +141,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
     t.integer "visibility_type", null: false
     t.index ["account_id"], name: "index_transactions_on_account_id"
     t.index ["category_id"], name: "index_transactions_on_category_id"
-    t.index ["currency_id"], name: "index_transactions_on_currency_id"
     t.index ["group_id"], name: "index_transactions_on_group_id"
     t.index ["settles_user_id"], name: "index_transactions_on_settles_user_id"
     t.index ["transaction_date"], name: "index_transactions_on_transaction_date"
@@ -154,6 +150,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.bigint "currency_id"
     t.bigint "default_account_id"
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -167,6 +164,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
     t.integer "role", default: 0, null: false
     t.string "uid"
     t.datetime "updated_at", null: false
+    t.index ["currency_id"], name: "index_users_on_currency_id"
     t.index ["default_account_id"], name: "index_users_on_default_account_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["mobile_number"], name: "index_users_on_mobile_number", unique: true, where: "(mobile_number IS NOT NULL)"
@@ -175,7 +173,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
     t.index ["role"], name: "index_users_on_role"
   end
 
-  add_foreign_key "accounts", "currencies"
   add_foreign_key "accounts", "users"
   add_foreign_key "categories", "users"
   add_foreign_key "debts", "users", column: "from_user_id"
@@ -192,9 +189,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_105706) do
   add_foreign_key "transactions", "accounts"
   add_foreign_key "transactions", "accounts", column: "transfer_account_id"
   add_foreign_key "transactions", "categories"
-  add_foreign_key "transactions", "currencies"
   add_foreign_key "transactions", "groups"
   add_foreign_key "transactions", "users"
   add_foreign_key "transactions", "users", column: "settles_user_id"
   add_foreign_key "users", "accounts", column: "default_account_id"
+  add_foreign_key "users", "currencies"
 end

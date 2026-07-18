@@ -6,7 +6,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
   let(:headers)  { { "Content-Type" => "application/json" } }
   let(:user)     { create(:user) }
   let(:currency) { create(:currency) }
-  let(:account)  { create(:account, user: user, currency: currency) }
+  let(:account)  { create(:account, user: user) }
   let(:category) { create(:category, user: user) }
 
   # Additional users for shared expense scenarios
@@ -81,13 +81,13 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    context "when currency_id is omitted" do
+    context "when creating without currency in params" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
 
-      it "defaults to the account currency" do
+      it "uses the user's currency in the response" do
         expect(response).to have_http_status(:created)
-        t = Transaction.find_by(title: title)
-        expect(t.currency_id).to eq(account.currency_id)
+        data = JSON.parse(response.body)
+        expect(data.dig("transaction", "currency_id")).to eq(user.currency_id)
       end
     end
 
@@ -132,7 +132,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when creating a transfer transaction" do
-      let(:to_account)      { create(:account, user: user, currency: currency) }
+      let(:to_account)      { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -564,7 +564,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -612,7 +612,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when transaction_type is transfer but from_account_id is missing" do
-      let(:to_account)      { create(:account, user: user, currency: currency) }
+      let(:to_account)      { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -668,8 +668,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when from_account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
-      let(:to_account)      { create(:account, user: user, currency: currency) }
+      let(:other_account)   { create(:account) }
+      let(:to_account)      { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -688,7 +688,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when to_account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -818,7 +818,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when account_id does not belong to paid_by user" do
-      let(:other_account)   { create(:account, currency: currency) } # belongs to a different user
+      let(:other_account)   { create(:account) } # belongs to a different user
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         {
@@ -1191,7 +1191,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when creating a settlement (current user pays back user2)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:user2_account)   { create(:account, user: user2) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
@@ -1242,8 +1242,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when paid_by is a different user than current_user (third-party records the settlement)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:user2_account)   { create(:account, user: user2, currency: currency) }
-      let(:user3_account)   { create(:account, user: user3, currency: currency) }
+      let(:user2_account)   { create(:account, user: user2) }
+      let(:user3_account)   { create(:account, user: user3) }
       let(:existing_debt)   { create(:debt, from_user: user3, to_user: user2, amount_cents: 3000) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
@@ -1287,8 +1287,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when account_id is omitted and paid_by user has a default account" do
       let(:request_headers)  { headers.merge(auth_headers(user)) }
-      let(:user_default_acc) { create(:account, user: user, currency: currency) }
-      let(:user2_account)    { create(:account, user: user2, currency: currency) }
+      let(:user_default_acc) { create(:account, user: user) }
+      let(:user2_account)    { create(:account, user: user2) }
       let(:existing_debt)    { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
       let(:request_params) do
         user.update!(default_account: user_default_acc)
@@ -1312,7 +1312,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when paid_by_account_id is omitted and paid_by user has no accounts" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:user2_account)   { create(:account, user: user2) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
         {
@@ -1333,7 +1333,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when the settlement fully clears the debt" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:user2_account)   { create(:account, user: user2) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 1000) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
@@ -1358,7 +1358,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when the settlement amount exceeds the existing debt (over-payment)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:user2_account)   { create(:account, user: user2, currency: currency) }
+      let(:user2_account)   { create(:account, user: user2) }
       let(:existing_debt)   { create(:debt, from_user: user, to_user: user2, amount_cents: 400) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
@@ -1481,8 +1481,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when account_id does not belong to the paid_by user" do
       let(:request_headers)    { headers.merge(auth_headers(user)) }
-      let(:other_user_account) { create(:account, user: user2, currency: currency) }
-      let(:user2_account)      { create(:account, user: user2, currency: currency) }
+      let(:other_user_account) { create(:account, user: user2) }
+      let(:user2_account)      { create(:account, user: user2) }
       let(:request_params) do
         user2_account.tap { user2.update!(default_account: user2_account) }
         {

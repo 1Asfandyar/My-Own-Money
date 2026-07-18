@@ -6,16 +6,15 @@ RSpec.describe "Api::V0::Transactions", type: :request do
   let(:headers)      { { "Content-Type" => "application/json" } }
   let(:user)         { create(:user) }
   let(:currency)     { create(:currency) }
-  let(:account)      { create(:account, user: user, currency: currency) }
-  let(:to_account)   { create(:account, user: user, currency: currency) }
+  let(:account)      { create(:account, user: user) }
+  let(:to_account)   { create(:account, user: user) }
   let(:category)     { create(:category, user: user) }
   let!(:transaction) do
     create(:transaction,
            user:             user,
            account:          account,
            category:         category,
-           currency:         currency,
-           transaction_type: :expense,
+                      transaction_type: :expense,
            visibility_type:  :personal,
            amount_cents:     5000,
            title:            "Groceries",
@@ -26,8 +25,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
            user:             user,
            account:          account,
            transfer_account: to_account,
-           currency:         currency,
-           amount_cents:     2000,
+                      amount_cents:     2000,
            title:            "Wallet top-up",
            transaction_date: Time.current).tap do
       account.update!(current_balance_cents: account.current_balance_cents - 2000)
@@ -126,8 +124,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                user:             user,
                account:          account,
                category:         category,
-               currency:         currency,
-               split_method:     :equal,
+                              split_method:     :equal,
                amount_cents:     3000,
                title:            "Shared dinner",
                transaction_date: Time.current).tap do |txn|
@@ -184,8 +181,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         create(:transaction, :shared,
                user:             user,
                account:          account,
-               currency:         currency,
-               split_method:     :exact,
+                              split_method:     :exact,
                amount_cents:     10000,
                title:            "Shared rent",
                transaction_date: Time.current).tap do |txn|
@@ -216,8 +212,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
         create(:transaction, :shared,
                user:             user,
                account:          account,
-               currency:         currency,
-               split_method:     :percentage,
+                              split_method:     :percentage,
                amount_cents:     10000,
                title:            "Shared trip",
                transaction_date: Time.current).tap do |txn|
@@ -239,7 +234,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when deleting a settlement transaction" do
       let(:user2)         { create(:user) }
-      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:user2_account) { create(:account, user: user2) }
       let(:existing_debt) { create(:debt, from_user: user, to_user: user2, amount_cents: 2000) }
       let(:settlement_transaction) do
         user2_account.tap { user2.update!(default_account: user2_account) }
@@ -248,8 +243,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                user:         user,
                settles_user: user2,
                account:      account,
-               currency:     currency,
-               amount_cents: 1000,
+                              amount_cents: 1000,
                title:        "Partial settle").tap do
           # simulate what the service does on create: reduce debt, debit settler, credit settles_user
           existing_debt.reload.update!(amount_cents: 1000)

@@ -6,7 +6,7 @@ class Transaction::Settlement::Create < ApplicationService
   # paid_by_user: User who is paying (the debtor)
   # paid_to_user: User being paid (the creditor)
   def call(paid_by_user:, paid_to_user:, title:, amount_cents:, paid_by_account:,
-           paid_to_account:, transaction_date:, note: nil, currency: nil)
+           paid_to_account:, transaction_date:, note: nil)
     @paid_by_user     = paid_by_user
     @paid_to_user     = paid_to_user
     @title            = title
@@ -15,14 +15,13 @@ class Transaction::Settlement::Create < ApplicationService
     @paid_to_account  = paid_to_account
     @transaction_date = transaction_date
     @note             = note
-    @currency         = currency
     persist
   end
 
   private
 
   attr_reader :paid_by_user, :paid_to_user, :title, :amount_cents, :paid_by_account,
-              :paid_to_account, :transaction_date, :note, :currency, :transaction
+              :paid_to_account, :transaction_date, :note, :transaction
 
   def persist
     debt_result = nil
@@ -38,8 +37,7 @@ class Transaction::Settlement::Create < ApplicationService
         account:          paid_by_account,
         transfer_account: paid_to_account,
         transaction_date: transaction_date,
-        note:             note,
-        currency:         currency || paid_by_account.currency
+        note:             note
       )
 
       # paid_by_user is paying out → balance decreases

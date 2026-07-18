@@ -7,7 +7,6 @@ module Api::V0::Accounts
         required(:name).filled(:string)
         optional(:current_balance_cents).maybe(:integer)
         optional(:initial_balance_cents).maybe(:integer)
-        optional(:currency_id).maybe(:integer)
       end
     end
 
@@ -32,11 +31,6 @@ module Api::V0::Accounts
       AccountPolicy.new(current_user, Account.new).create? ? Success() : Failure(:forbidden)
     end
 
-    def validate_currency
-      return Success() if params[:currency_id].nil?
-      Currency.exists?(id: params[:currency_id]) ? Success() : Failure(:invalid_currency)
-    end
-
     def persist
       @account = Account.new(account_params)
       account.save ? Success(account) : Failure(errors: account.errors.to_hash)
@@ -47,7 +41,6 @@ module Api::V0::Accounts
         name: params[:name],
         current_balance_cents: params[:current_balance_cents] || 0,
         initial_balance_cents: params[:initial_balance_cents] || 0,
-        currency_id: params[:currency_id] || Currency.find_by(code: "USD")&.id,
         user: current_user
       }
     end

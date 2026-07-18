@@ -27,7 +27,6 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
-        currency_id: number;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -44,7 +43,6 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -80,7 +78,6 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
-        currency_id: number;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -99,7 +96,6 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -126,7 +122,6 @@ module Api::V0
         name: string;
         current_balance_cents?: number; // default: 0
         initial_balance_cents?: number; // default: 0
-        currency_id?: number;           // defaults to USD
       };
 
       // Output
@@ -141,7 +136,6 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
-        currency_id: number;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -151,7 +145,6 @@ module Api::V0
     param :name, String, required: true, description: "Account name"
     param :current_balance_cents, Integer, required: false, description: "Current balance in cents (default: 0)"
     param :initial_balance_cents, Integer, required: false, description: "Initial balance in cents (default: 0)"
-    param :currency_id, Integer, required: false, description: "Currency ID (defaults to USD if omitted)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 422, desc: "Validation errors"
@@ -163,7 +156,6 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -190,7 +182,6 @@ module Api::V0
         name?: string;
         current_balance_cents?: number;
         initial_balance_cents?: number;
-        currency_id?: number;
       };
 
       // Output
@@ -205,7 +196,6 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
-        currency_id: number;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -216,7 +206,6 @@ module Api::V0
     param :name, String, required: false, description: "Account name"
     param :current_balance_cents, Integer, required: false, description: "Current balance in cents"
     param :initial_balance_cents, Integer, required: false, description: "Initial balance in cents"
-    param :currency_id, Integer, required: false, description: "Currency ID"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — insufficient permissions"
     error code: 404, desc: "Account not found"
@@ -229,7 +218,6 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"

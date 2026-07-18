@@ -14,7 +14,7 @@ module Api::V0::Transactions
 
       txn = current_user.visible_transactions
                         .includes(
-                          :user, :account, :category, :currency, :group,
+                          { user: :currency }, :account, :category, :group,
                           :settles_user, :transfer_account,
                           transaction_splits: [ :user, :category ]
                         )

@@ -18,6 +18,5 @@ class Currency < ApplicationRecord
   validates :name,   presence: true
   validates :symbol, presence: true
 
-  has_many :accounts
-  has_many :transactions
+  has_many :users
 end

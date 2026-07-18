@@ -6,7 +6,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
   let(:headers)  { { "Content-Type" => "application/json" } }
   let(:user)     { create(:user) }
   let(:currency) { create(:currency) }
-  let(:account)  { create(:account, user: user, currency: currency) }
+  let(:account)  { create(:account, user: user) }
   let(:category) { create(:category, user: user) }
 
   describe "GET /api/v0/transactions" do
@@ -23,14 +23,14 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when authenticated with no filters" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user) { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency, category: category,
+        create(:transaction, user: user, account: account, category: category,
                title: "Groceries", transaction_date: 2.days.ago)
-        create(:transaction, user: user, account: account, currency: currency, category: category,
+        create(:transaction, user: user, account: account, category: category,
                title: "Rent", transaction_date: 1.day.ago)
-        create(:transaction, user: other_user, account: other_account, currency: currency)
+        create(:transaction, user: other_user, account: other_account)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -49,12 +49,12 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when another user created a shared expense with current user in the splits" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user) { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
       let(:group) { create(:group) }
 
       before do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
-                             currency: currency, title: "Shared Dinner", group: group)
+                             title: "Shared Dinner", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
                owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
@@ -74,11 +74,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when another user created a settlement targeting current user" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user) { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
 
       before do
         create(:transaction, :settlement, user: other_user, account: other_account,
-               currency: currency, title: "Debt Repayment", settles_user: user)
+               title: "Debt Repayment", settles_user: user)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -96,12 +96,12 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when a shared expense has multiple splits for current user (deduplication)" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user) { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
       let(:group) { create(:group) }
 
       before do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
-                             currency: currency, title: "Group Trip", group: group)
+                             title: "Group Trip", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
                owed_amount_cents: 300)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user,
@@ -116,14 +116,14 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when filtered by account_id" do
-      let(:other_account)  { create(:account, user: user, currency: currency) }
+      let(:other_account)  { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { account_id: account.id } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency, category: category,
+        create(:transaction, user: user, account: account, category: category,
                transaction_type: :expense, amount_cents: 2_000)
-        create(:transaction, user: user, account: other_account, currency: currency, category: category,
+        create(:transaction, user: user, account: other_account, category: category,
                transaction_type: :expense, amount_cents: 3_000)
         get endpoint, params: request_params, headers: request_headers
       end
@@ -151,9 +151,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { transaction_type: "income" } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                transaction_type: :expense, title: "Groceries")
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                transaction_type: :income, title: "Salary")
         get endpoint, params: request_params, headers: request_headers
       end
@@ -172,10 +172,10 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:group)           { create(:group) }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                visibility_type: :personal, title: "Personal Expense")
         shared_txn = create(:transaction, :shared, user: user, account: account,
-                             currency: currency, title: "Group Dinner", group: group)
+                             title: "Group Dinner", group: group)
         create(:transaction_split, financial_transaction: shared_txn, user: user,
                owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
@@ -198,11 +198,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
       before do
         group_txn = create(:transaction, :shared, user: user, account: account,
-                           currency: currency, title: "Group Expense", group: group)
+                           title: "Group Expense", group: group)
         create(:transaction_split, financial_transaction: group_txn, user: user,
                owed_amount_cents: 500)
         other_txn = create(:transaction, :shared, user: user, account: account,
-                           currency: currency, title: "Other Group Expense", group: other_group)
+                           title: "Other Group Expense", group: other_group)
         create(:transaction_split, financial_transaction: other_txn, user: user,
                owed_amount_cents: 500)
         get endpoint, params: request_params, headers: request_headers
@@ -220,19 +220,19 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when filtered by friend_id" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:friend)          { create(:user) }
-      let(:friend_account)  { create(:account, user: friend, currency: currency) }
+      let(:friend_account)  { create(:account, user: friend) }
       let(:group)           { create(:group) }
       let(:request_params)  { { friend_id: friend.id } }
 
       before do
         shared_txn = create(:transaction, :shared, user: friend, account: friend_account,
-                             currency: currency, title: "Shared with Friend", group: group)
+                             title: "Shared with Friend", group: group)
         # Both current user AND friend need split rows for the friend_id filter to match
         create(:transaction_split, financial_transaction: shared_txn, user: user,
                owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: shared_txn, user: friend,
                owed_amount_cents: 500)
-        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+        create(:transaction, user: user, account: account, title: "My Personal")
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -252,8 +252,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
       before do
         create(:transaction, :settlement, user: user, account: account,
-               currency: currency, title: "I Settled with Friend", settles_user: friend)
-        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+               title: "I Settled with Friend", settles_user: friend)
+        create(:transaction, user: user, account: account, title: "My Personal")
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -269,13 +269,13 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     context "when filtered by friend_id and the friend paid a settlement targeting the current user" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:friend)          { create(:user) }
-      let(:friend_account)  { create(:account, user: friend, currency: currency) }
+      let(:friend_account)  { create(:account, user: friend) }
       let(:request_params)  { { friend_id: friend.id } }
 
       before do
         create(:transaction, :settlement, user: friend, account: friend_account,
-               currency: currency, title: "Friend Settled with Me", settles_user: user)
-        create(:transaction, user: user, account: account, currency: currency, title: "My Personal")
+               title: "Friend Settled with Me", settles_user: user)
+        create(:transaction, user: user, account: account, title: "My Personal")
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -293,7 +293,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { per_page: 2, page: 1 } }
 
       before do
-        3.times { |i| create(:transaction, user: user, account: account, currency: currency, transaction_date: i.days.ago) }
+        3.times { |i| create(:transaction, user: user, account: account, transaction_date: i.days.ago) }
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -309,7 +309,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { per_page: 2, page: 2 } }
 
       before do
-        3.times { |i| create(:transaction, user: user, account: account, currency: currency, transaction_date: i.days.ago) }
+        3.times { |i| create(:transaction, user: user, account: account, transaction_date: i.days.ago) }
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -326,8 +326,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { category_id: category.id } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency, category: category)
-        create(:transaction, user: user, account: account, currency: currency, category: other_category)
+        create(:transaction, user: user, account: account, category: category)
+        create(:transaction, user: user, account: account, category: other_category)
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -343,11 +343,11 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { date_from: 3.days.ago.iso8601, date_to: 1.day.ago.iso8601 } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                title: "Old",     transaction_date: 5.days.ago)
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                title: "InRange", transaction_date: 2.days.ago)
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                title: "Future",  transaction_date: Time.current)
         get endpoint, params: request_params, headers: request_headers
       end
@@ -365,8 +365,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { search: "grocery" } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency, title: "Weekly Grocery Run")
-        create(:transaction, user: user, account: account, currency: currency, title: "Rent Payment")
+        create(:transaction, user: user, account: account, title: "Weekly Grocery Run")
+        create(:transaction, user: user, account: account, title: "Rent Payment")
         get endpoint, params: request_params, headers: request_headers
       end
 
@@ -383,9 +383,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_params)  { { search: "monthly" } }
 
       before do
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                title: "Rent", note: "Monthly payment")
-        create(:transaction, user: user, account: account, currency: currency,
+        create(:transaction, user: user, account: account,
                title: "Coffee", note: nil)
         get endpoint, params: request_params, headers: request_headers
       end

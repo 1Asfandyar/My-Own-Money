@@ -28,6 +28,5 @@ class Account < ApplicationRecord
   validates :current_balance_cents, numericality: { only_integer: true }
 
   belongs_to :user
-  belongs_to :currency
   has_many :transactions
 end

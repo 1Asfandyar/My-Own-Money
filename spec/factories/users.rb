@@ -5,6 +5,7 @@ FactoryBot.define do
     full_name { "Test User" }
     sequence(:mobile_number) { |n| "0300000#{n.to_s.rjust(4, '0')}" }
     role { :user }
+    association :currency
 
     trait :admin do
       role { :admin }

@@ -68,8 +68,7 @@ class Transaction::Settlement::Update < ApplicationService
       account:          new_paid_by_account,
       transfer_account: new_paid_to_account,
       transaction_date: attrs[:transaction_date],
-      note:             attrs[:note],
-      currency:         attrs[:currency]
+      note:             attrs[:note]
     }.compact
   end
 end

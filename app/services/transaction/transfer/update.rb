@@ -72,7 +72,6 @@ class Transaction::Transfer::Update < ApplicationService
       account:          attrs[:from_account],
       transfer_account: attrs[:to_account],
       transaction_type: attrs[:transaction_type],
-      currency:         attrs[:currency],
       transaction_date: attrs[:transaction_date],
       note:             attrs[:note]
     }.compact

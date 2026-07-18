@@ -294,7 +294,6 @@ module Api::V0
         amount_cents: number;             // must be > 0
         transaction_date?: string;        // ISO 8601; defaults to today
         note?: string;
-        currency_id?: number;
 
         // for income / expense (both required)
         account_id?: number;
@@ -338,7 +337,6 @@ module Api::V0
     param :amount_cents, Integer, required: true, desc: "Amount in cents (must be > 0)"
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date (defaults to today)"
     param :note, String, required: false, desc: "Optional note"
-    param :currency_id, Integer, required: false, desc: "Currency ID (defaults to account currency)"
     param :account_id, Integer, required: false, desc: "Account ID — required for income/expense; not used for settlement (use paid_by_account_id instead)"
     param :category_id, Integer, required: false, desc: "Category ID — required for income and expense (personal & shared); not required for settlement; belongs to current user"
     param :paid_by_id, Integer, required: false, desc: "User ID of who paid (the debtor) — required for settlement; does not have to be the current user; must differ from paid_to_id"
@@ -369,7 +367,6 @@ module Api::V0
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
         param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -392,7 +389,7 @@ module Api::V0
       Changing `transaction_type` between personal and transfer types is supported.
 
       **Settlement transactions** support updating `title`, `amount_cents`, `paid_by_account_id`,
-      `paid_to_account_id`, `transaction_date`, `note`, and `currency_id`.
+      `paid_to_account_id`, `transaction_date`, and `note`.
       The `paid_by_id` user can update any of those fields. The `paid_to_id` user can only update
       `paid_to_account_id`. Changing `transaction_type`, `paid_by_id`, or `paid_to_id` is not supported.
 
@@ -407,7 +404,6 @@ module Api::V0
         amount_cents?: number;       // must be > 0
         transaction_date?: string;   // ISO 8601
         note?: string | null;
-        currency_id?: number;
         account_id?: number;
         category_id?: number;
         from_account_id?: number;
@@ -427,7 +423,6 @@ module Api::V0
     param :amount_cents, Integer, required: false, desc: "Amount in cents (must be > 0)"
     param :transaction_date, String, required: false, desc: "ISO 8601 transaction date"
     param :note, String, required: false, desc: "Optional note (pass null to clear)"
-    param :currency_id, Integer, required: false, desc: "Currency ID"
     param :account_id, Integer, required: false, desc: "Account ID (for income/expense)"
     param :category_id, Integer, required: false, desc: "Category ID (for income/expense)"
     param :from_account_id, Integer, required: false, desc: "Source account ID (for transfer)"
@@ -449,7 +444,6 @@ module Api::V0
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers)"
         param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
-        param :currency_id, Integer, desc: "Currency ID"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"

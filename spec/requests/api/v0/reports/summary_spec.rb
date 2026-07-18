@@ -65,7 +65,7 @@ RSpec.describe "Api::V0::Reports", type: :request do
 
     context "when authenticated with an account" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
-      let!(:account) { create(:account, user: user, currency: currency, current_balance_cents: 50_000) }
+      let!(:account) { create(:account, user: user, current_balance_cents: 50_000) }
 
       before do
         get endpoint, params: { month: month }, headers: request_headers
@@ -83,7 +83,7 @@ RSpec.describe "Api::V0::Reports", type: :request do
     context "when authenticated with an account and debts" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user)      { create(:user) }
-      let!(:account)        { create(:account, user: user, currency: currency, current_balance_cents: 50_000) }
+      let!(:account)        { create(:account, user: user, current_balance_cents: 50_000) }
       let!(:owed_to_you)    { create(:debt, from_user: other_user, to_user: user, amount_cents: 3_000) }
       let!(:you_owe)        { create(:debt, from_user: user, to_user: other_user, amount_cents: 1_000) }
 

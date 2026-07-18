@@ -7,7 +7,6 @@ FactoryBot.define do
     transaction_date { Time.current }
     association :user
     association :account
-    association :currency
 
     trait :transfer do
       transaction_type { :transfer }

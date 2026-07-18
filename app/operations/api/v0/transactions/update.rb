@@ -13,7 +13,6 @@ module Api::V0::Transactions
       if transaction.settlement?
         yield find_paid_by_account if params.key?(:paid_by_account_id) && paid_by_calling?
         yield find_paid_to_account if params.key?(:paid_to_account_id)
-        yield find_currency        if params.key?(:currency_id)
         yield persist_settlement
       elsif shared_expense?
         yield validate_split_method_change
@@ -22,14 +21,12 @@ module Api::V0::Transactions
         yield find_account_for_payer   if params.key?(:account_id)
         yield find_category_for_payer  if params.key?(:category_id)
         yield find_split_participants  if split_participants_provided?
-        yield find_currency            if params.key?(:currency_id)
         yield persist_shared
       else
         yield find_account     if params.key?(:account_id)
         yield find_from_account if params.key?(:from_account_id)
         yield find_to_account   if params.key?(:to_account_id)
         yield find_category    if params.key?(:category_id)
-        yield find_currency    if params.key?(:currency_id)
         yield validate_transfer_params if transfer_effective?
         yield persist_personal_or_transfer
       end
@@ -43,7 +40,7 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :transaction, :account,
-                :from_account, :to_account, :category, :currency,
+          :from_account, :to_account, :category,
                 :paid_by_user, :shared_by_users, :paid_by_account, :paid_to_account
 
     # --- role helpers ---
@@ -190,12 +187,6 @@ module Api::V0::Transactions
       @transaction ? Success() : Failure(:not_found)
     end
 
-    def find_currency
-      return Success() unless params.key?(:currency_id)
-      @currency = Currency.find_by(id: params[:currency_id])
-      @currency ? Success() : Failure(:not_found)
-    end
-
     # --- transfer validation ---
 
     def validate_transfer_params
@@ -218,7 +209,6 @@ module Api::V0::Transactions
       service_attrs[:paid_to_account]  = paid_to_account                      if paid_to_account
       service_attrs[:transaction_date] = Time.parse(params[:transaction_date]) if params.key?(:transaction_date)
       service_attrs[:note]             = params[:note]                         if params.key?(:note)
-      service_attrs[:currency]         = currency                              if currency
 
       handle_service_result(Transaction::Settlement::Update.call(transaction: transaction, **service_attrs))
     end
@@ -236,7 +226,6 @@ module Api::V0::Transactions
       service_args[:title]            = params[:title]                        if params.key?(:title)
       service_args[:transaction_date] = Time.parse(params[:transaction_date]) if params.key?(:transaction_date)
       service_args[:note]             = params[:note]                         if params.key?(:note)
-      service_args[:currency]         = currency                              if currency
 
       if split_participants_provided?
         if equal_split?
@@ -278,7 +267,6 @@ module Api::V0::Transactions
       attrs[:transaction_type] = params[:transaction_type]             if params.key?(:transaction_type)
       attrs[:amount_cents]     = params[:amount_cents]                 if params.key?(:amount_cents)
       attrs[:category]         = category                              if category
-      attrs[:currency]         = currency                              if currency
       attrs[:transaction_date] = Time.parse(params[:transaction_date]) if params.key?(:transaction_date)
       attrs[:note]             = params[:note]                         if params.key?(:note)
       attrs

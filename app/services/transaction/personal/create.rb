@@ -3,7 +3,7 @@
 class Transaction::Personal::Create < ApplicationService
   include Transaction::Helpers
 
-  def call(user:, transaction_type:, title:, amount_cents:, account:, transaction_date:, note: nil, category: nil, currency: nil)
+  def call(user:, transaction_type:, title:, amount_cents:, account:, transaction_date:, note: nil, category: nil)
     @user             = user
     @transaction_type = transaction_type
     @title            = title
@@ -12,12 +12,11 @@ class Transaction::Personal::Create < ApplicationService
     @transaction_date = transaction_date
     @note             = note
     @category         = category
-    @currency         = currency
     persist
   end
 
   private
-  attr_reader :user, :transaction_type, :title, :amount_cents, :account, :transaction_date, :note, :category, :currency, :transaction
+  attr_reader :user, :transaction_type, :title, :amount_cents, :account, :transaction_date, :note, :category, :transaction
 
   def persist
     ActiveRecord::Base.transaction do
@@ -40,8 +39,7 @@ class Transaction::Personal::Create < ApplicationService
       account:          account,
       transaction_date: transaction_date,
       note:             note,
-      category:         category,
-      currency:         currency || account.currency
+      category:         category
     }.compact
   end
 

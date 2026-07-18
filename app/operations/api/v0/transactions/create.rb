@@ -25,7 +25,6 @@ module Api::V0::Transactions
           yield find_group if params[:group_id].present?
         end
       end
-      yield find_currency
       yield persist
 
       Success(
@@ -37,7 +36,7 @@ module Api::V0::Transactions
     private
 
     attr_reader :current_user, :params, :account, :from_account, :to_account,
-                :category, :currency, :transaction, :shared_by_users, :paid_to_user, :group,
+          :category, :transaction, :shared_by_users, :paid_to_user, :group,
                 :paid_by_user, :paid_by_account, :paid_to_account
 
     def transfer?
@@ -130,13 +129,6 @@ module Api::V0::Transactions
       Success()
     end
 
-    def find_currency
-      return Success() unless params[:currency_id]
-
-      @currency = Currency.find_by(id: params[:currency_id])
-      @currency ? Success() : Failure(:not_found)
-    end
-
     def persist
       if transfer?
         persist_transfer
@@ -158,8 +150,7 @@ module Api::V0::Transactions
         paid_by_account:  paid_by_account,
         paid_to_account:  paid_to_account,
         transaction_date: parse_date,
-        note:             params[:note],
-        currency:         currency
+        note:             params[:note]
       )
       handle_service_result(result)
     end
@@ -172,8 +163,7 @@ module Api::V0::Transactions
         from_account:     from_account,
         to_account:       to_account,
         transaction_date: parse_date,
-        note:             params[:note],
-        currency:         currency
+        note:             params[:note]
       )
       handle_service_result(result)
     end
@@ -187,8 +177,7 @@ module Api::V0::Transactions
         account:          account,
         category:         category,
         transaction_date: parse_date,
-        note:             params[:note],
-        currency:         currency
+        note:             params[:note]
       )
       handle_service_result(result)
     end
@@ -207,7 +196,6 @@ module Api::V0::Transactions
         category:         category,
         transaction_date: parse_date,
         note:             params[:note],
-        currency:         currency,
         group:            group
       }
 

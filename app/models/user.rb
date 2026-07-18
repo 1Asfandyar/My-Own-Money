@@ -47,6 +47,7 @@ class User < ApplicationRecord
   validates :mobile_number, presence: true, unless: -> { provider.present? }
   validates :mobile_number, uniqueness: true, allow_nil: true
 
+  belongs_to :currency, optional: true
   has_many :accounts
   belongs_to :default_account, class_name: "Account", foreign_key: :default_account_id, optional: true
   has_many :categories

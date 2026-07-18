@@ -11,6 +11,7 @@ module Api::V0::Users
         optional(:password).filled(:string)
         optional(:password_confirmation).filled(:string)
         optional(:onboarding_completed).filled(:bool)
+        optional(:currency_id).maybe(:integer)
       end
 
       rule(:email).validate(:email_format)
@@ -39,12 +40,9 @@ module Api::V0::Users
         email: params[:email],
         password: params[:password],
         password_confirmation: params[:password_confirmation],
-        onboarding_completed: params[:onboarding_completed]
+        onboarding_completed: params[:onboarding_completed],
+        currency_id: params[:currency_id]
       }.compact
-    end
-
-    def update_user
-      current_user.update(user_params) ? Success(current_user) : Failure(errors: current_user.errors.to_hash)
     end
 
     def validate_current_password
@@ -53,6 +51,29 @@ module Api::V0::Users
       return Failure(errors: { current_password: [ "is invalid" ] }) unless current_user.valid_password?(params[:current_password])
 
       Success()
+    end
+
+    def update_user
+      yield validate_currency
+      yield validate_onboarding_currency
+
+      current_user.update(user_params) ? Success(current_user) : Failure(errors: current_user.errors.to_hash)
+    end
+
+    def validate_currency
+      return Success() unless params.key?(:currency_id)
+      return Success() if params[:currency_id].nil?
+
+      Currency.exists?(id: params[:currency_id]) ? Success() : Failure(errors: { currency_id: [ "is invalid" ] })
+    end
+
+    def validate_onboarding_currency
+      mark_complete = params[:onboarding_completed] == true
+      next_currency_id = params.key?(:currency_id) ? params[:currency_id] : current_user.currency_id
+      return Success() unless mark_complete
+      return Success() if next_currency_id.present?
+
+      Failure(errors: { currency_id: [ "must be present to complete onboarding" ] })
     end
 
     def password_update?

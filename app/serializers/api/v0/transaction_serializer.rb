@@ -4,7 +4,11 @@ module Api::V0
 
     fields :title, :amount_cents, :transaction_type, :visibility_type,
            :transaction_date, :note, :account_id, :transfer_account_id,
-           :category_id, :settles_user_id, :currency_id, :user_id, :created_at, :updated_at
+           :category_id, :settles_user_id, :user_id, :created_at, :updated_at
+
+    field :currency_id do |transaction|
+      transaction.user.currency_id
+    end
 
     view :with_categories do
       excludes :split_amount_cents
