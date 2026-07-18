@@ -19,6 +19,7 @@ module Reports
         total_balance_cents:  total_balance_cents,
         spending_by_category: spending_by_category,
         shared_money:         shared_money,
+        net_worth:            net_worth,
         trend:                trend
       }
     end
@@ -167,37 +168,52 @@ module Reports
     # ---------------------------------------------------------------------------
 
     def shared_money
-      receive_debts = Debt.where(to_user_id: current_user.id).includes(:from_user)
-      owe_debts     = Debt.where(from_user_id: current_user.id).includes(:to_user)
+      @shared_money ||= begin
+        receive_debts = Debt.where(to_user_id: current_user.id).includes(:from_user)
+        owe_debts     = Debt.where(from_user_id: current_user.id).includes(:to_user)
 
-      you_will_receive = receive_debts.sum(:amount_cents)
-      you_owe          = owe_debts.sum(:amount_cents)
+        you_will_receive = receive_debts.sum(:amount_cents)
+        you_owe          = owe_debts.sum(:amount_cents)
 
-      breakdown = []
+        breakdown = []
 
-      receive_debts.each do |debt|
-        breakdown << {
-          user_id:      debt.from_user_id,
-          name:         debt.from_user.full_name,
-          direction:    "owes_you",
-          amount_cents: debt.amount_cents
+        receive_debts.each do |debt|
+          breakdown << {
+            user_id:      debt.from_user_id,
+            name:         debt.from_user.full_name,
+            direction:    "owes_you",
+            amount_cents: debt.amount_cents
+          }
+        end
+
+        owe_debts.each do |debt|
+          breakdown << {
+            user_id:      debt.to_user_id,
+            name:         debt.to_user.full_name,
+            direction:    "you_owe",
+            amount_cents: debt.amount_cents
+          }
+        end
+
+        {
+          you_will_receive_cents: you_will_receive,
+          you_owe_cents:          you_owe,
+          net_cents:              you_will_receive - you_owe,
+          breakdown:              breakdown
         }
       end
+    end
 
-      owe_debts.each do |debt|
-        breakdown << {
-          user_id:      debt.to_user_id,
-          name:         debt.to_user.full_name,
-          direction:    "you_owe",
-          amount_cents: debt.amount_cents
-        }
-      end
+    # ---------------------------------------------------------------------------
+    # Net worth (live totals — not period-bound)
+    # ---------------------------------------------------------------------------
 
+    def net_worth
       {
-        you_will_receive_cents: you_will_receive,
-        you_owe_cents:          you_owe,
-        net_cents:              you_will_receive - you_owe,
-        breakdown:              breakdown
+        total_accounts_balance_cents: total_balance_cents,
+        total_owed_to_you_cents:      shared_money[:you_will_receive_cents],
+        total_you_owe_cents:          shared_money[:you_owe_cents],
+        net_worth_cents:              total_balance_cents + shared_money[:you_will_receive_cents] - shared_money[:you_owe_cents]
       }
     end
 

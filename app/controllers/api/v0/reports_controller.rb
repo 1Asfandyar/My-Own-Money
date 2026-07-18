@@ -10,7 +10,7 @@ module Api::V0
     description <<~DESC
       Returns a financial summary for the given month (defaults to the current month).
       Includes income/expense overview, account balances, spending by category,
-      live shared-money debt balances, and a 3-month income/expense trend.
+      live shared-money debt balances, live net worth, and a 3-month income/expense trend.
 
       **TypeScript Types**
 
@@ -33,6 +33,7 @@ module Api::V0
         total_balance_cents:  number;
         spending_by_category: CategorySpend[];
         shared_money:         SharedMoney;
+        net_worth:            NetWorth;
         trend:                TrendMonth[];
       };
 
@@ -68,6 +69,13 @@ module Api::V0
           direction:    "owes_you" | "you_owe";
           amount_cents: number;
         }>;
+      };
+
+      type NetWorth = {
+        total_accounts_balance_cents: number;
+        total_owed_to_you_cents:      number;
+        total_you_owe_cents:          number;
+        net_worth_cents:              number;
       };
 
       type TrendMonth = {
@@ -116,6 +124,12 @@ module Api::V0
             param :direction,    String,  desc: "'owes_you' or 'you_owe'"
             param :amount_cents, Integer, desc: "Amount in cents"
           end
+        end
+        param :net_worth, Hash, desc: "Live net worth totals (not period-bound)" do
+          param :total_accounts_balance_cents, Integer, desc: "Sum of all non-archived account balances in cents"
+          param :total_owed_to_you_cents,      Integer, desc: "Total owed to the current user across all friends, in cents"
+          param :total_you_owe_cents,          Integer, desc: "Total the current user owes across all friends, in cents"
+          param :net_worth_cents,              Integer, desc: "Accounts balance plus money owed to you minus money you owe, in cents"
         end
         param :trend, Array, desc: "Income and expenses for the current month and the two preceding months" do
           param :month,          String,  desc: "Human-readable month label (e.g. 'April 2026')"

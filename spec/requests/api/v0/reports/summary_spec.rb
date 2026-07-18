@@ -80,6 +80,41 @@ RSpec.describe "Api::V0::Reports", type: :request do
       end
     end
 
+    context "when authenticated with an account and debts" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+      let(:other_user)      { create(:user) }
+      let!(:account)        { create(:account, user: user, currency: currency, current_balance_cents: 50_000) }
+      let!(:owed_to_you)    { create(:debt, from_user: other_user, to_user: user, amount_cents: 3_000) }
+      let!(:you_owe)        { create(:debt, from_user: user, to_user: other_user, amount_cents: 1_000) }
+
+      before do
+        get endpoint, params: { month: month }, headers: request_headers
+      end
+
+      it "returns correct net worth totals" do
+        expect(response).to have_http_status(:ok)
+        expect(response).to match_json_schema("reports/summary_response")
+
+        net_worth = JSON.parse(response.body)["report"]["net_worth"]
+        expect(net_worth["total_accounts_balance_cents"]).to eq(50_000)
+        expect(net_worth["total_owed_to_you_cents"]).to eq(3_000)
+        expect(net_worth["total_you_owe_cents"]).to eq(1_000)
+        expect(net_worth["net_worth_cents"]).to eq(52_000)
+      end
+    end
+
+    context "when user has no accounts or debts" do
+      let(:request_headers) { headers.merge(auth_headers(user)) }
+
+      it "returns zeroed net worth" do
+        net_worth = JSON.parse(response.body)["report"]["net_worth"]
+        expect(net_worth["total_accounts_balance_cents"]).to eq(0)
+        expect(net_worth["total_owed_to_you_cents"]).to eq(0)
+        expect(net_worth["total_you_owe_cents"]).to eq(0)
+        expect(net_worth["net_worth_cents"]).to eq(0)
+      end
+    end
+
     context "when trend is requested" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
 

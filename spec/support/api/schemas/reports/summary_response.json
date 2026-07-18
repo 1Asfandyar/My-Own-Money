@@ -1,31 +1,67 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["success", "report"],
+  "required": [
+    "success",
+    "report"
+  ],
   "properties": {
-    "success": { "type": "boolean", "enum": [true] },
-    "report":  { "$ref": "#/definitions/report" }
+    "success": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    },
+    "report": {
+      "$ref": "#/definitions/report"
+    }
   },
   "definitions": {
     "report": {
       "type": "object",
-      "required": ["period", "overview", "accounts", "total_balance_cents", "spending_by_category", "shared_money", "trend"],
+      "required": [
+        "period",
+        "overview",
+        "accounts",
+        "total_balance_cents",
+        "spending_by_category",
+        "shared_money",
+        "net_worth",
+        "trend"
+      ],
       "properties": {
-        "period": { "type": "string" },
-        "overview": { "$ref": "#/definitions/overview" },
+        "period": {
+          "type": "string"
+        },
+        "overview": {
+          "$ref": "#/definitions/overview"
+        },
         "accounts": {
           "type": "array",
-          "items": { "$ref": "#/definitions/account" }
+          "items": {
+            "$ref": "#/definitions/account"
+          }
         },
-        "total_balance_cents": { "type": "integer" },
+        "total_balance_cents": {
+          "type": "integer"
+        },
         "spending_by_category": {
           "type": "array",
-          "items": { "$ref": "#/definitions/category_spending" }
+          "items": {
+            "$ref": "#/definitions/category_spending"
+          }
         },
-        "shared_money": { "$ref": "#/definitions/shared_money" },
+        "shared_money": {
+          "$ref": "#/definitions/shared_money"
+        },
+        "net_worth": {
+          "$ref": "#/definitions/net_worth"
+        },
         "trend": {
           "type": "array",
-          "items": { "$ref": "#/definitions/trend_month" },
+          "items": {
+            "$ref": "#/definitions/trend_month"
+          },
           "minItems": 3,
           "maxItems": 3
         }
@@ -33,66 +69,178 @@
     },
     "overview": {
       "type": "object",
-      "required": ["total_income_cents", "total_expenses_cents", "net_cents", "savings_rate_percent"],
+      "required": [
+        "total_income_cents",
+        "total_expenses_cents",
+        "net_cents",
+        "savings_rate_percent"
+      ],
       "properties": {
-        "total_income_cents":   { "type": "integer" },
-        "total_expenses_cents": { "type": "integer" },
-        "net_cents":            { "type": "integer" },
-        "savings_rate_percent": { "type": "integer" }
+        "total_income_cents": {
+          "type": "integer"
+        },
+        "total_expenses_cents": {
+          "type": "integer"
+        },
+        "net_cents": {
+          "type": "integer"
+        },
+        "savings_rate_percent": {
+          "type": "integer"
+        }
       }
     },
     "account": {
       "type": "object",
-      "required": ["id", "name", "balance_cents", "currency_code"],
+      "required": [
+        "id",
+        "name",
+        "balance_cents",
+        "currency_code"
+      ],
       "properties": {
-        "id":            { "type": "integer" },
-        "name":          { "type": "string" },
-        "balance_cents": { "type": "integer" },
-        "currency_code": { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "balance_cents": {
+          "type": "integer"
+        },
+        "currency_code": {
+          "type": "string"
+        }
       }
     },
     "category_spending": {
       "type": "object",
-      "required": ["category_id", "category_name", "amount_cents", "percent_of_expenses", "transaction_count"],
+      "required": [
+        "category_id",
+        "category_name",
+        "amount_cents",
+        "percent_of_expenses",
+        "transaction_count"
+      ],
       "properties": {
-        "category_id":         { "type": "integer" },
-        "category_name":       { "type": "string" },
-        "amount_cents":        { "type": "integer" },
-        "percent_of_expenses": { "type": "integer" },
-        "transaction_count":   { "type": "integer" }
+        "category_id": {
+          "type": "integer"
+        },
+        "category_name": {
+          "type": "string"
+        },
+        "amount_cents": {
+          "type": "integer"
+        },
+        "percent_of_expenses": {
+          "type": "integer"
+        },
+        "transaction_count": {
+          "type": "integer"
+        }
       }
     },
     "shared_money": {
       "type": "object",
-      "required": ["you_will_receive_cents", "you_owe_cents", "net_cents", "breakdown"],
+      "required": [
+        "you_will_receive_cents",
+        "you_owe_cents",
+        "net_cents",
+        "breakdown"
+      ],
       "properties": {
-        "you_will_receive_cents": { "type": "integer" },
-        "you_owe_cents":          { "type": "integer" },
-        "net_cents":              { "type": "integer" },
+        "you_will_receive_cents": {
+          "type": "integer"
+        },
+        "you_owe_cents": {
+          "type": "integer"
+        },
+        "net_cents": {
+          "type": "integer"
+        },
         "breakdown": {
           "type": "array",
-          "items": { "$ref": "#/definitions/debt_entry" }
+          "items": {
+            "$ref": "#/definitions/debt_entry"
+          }
         }
       }
     },
     "debt_entry": {
       "type": "object",
-      "required": ["user_id", "name", "direction", "amount_cents"],
+      "required": [
+        "user_id",
+        "name",
+        "direction",
+        "amount_cents"
+      ],
       "properties": {
-        "user_id":      { "type": "integer" },
-        "name":         { "type": ["string", "null"] },
-        "direction":    { "type": "string", "enum": ["owes_you", "you_owe"] },
-        "amount_cents": { "type": "integer" }
+        "user_id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "owes_you",
+            "you_owe"
+          ]
+        },
+        "amount_cents": {
+          "type": "integer"
+        }
       }
     },
     "trend_month": {
       "type": "object",
-      "required": ["month", "month_key", "income_cents", "expenses_cents"],
+      "required": [
+        "month",
+        "month_key",
+        "income_cents",
+        "expenses_cents"
+      ],
       "properties": {
-        "month":          { "type": "string" },
-        "month_key":      { "type": "string", "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
-        "income_cents":   { "type": "integer" },
-        "expenses_cents": { "type": "integer" }
+        "month": {
+          "type": "string"
+        },
+        "month_key": {
+          "type": "string",
+          "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+        },
+        "income_cents": {
+          "type": "integer"
+        },
+        "expenses_cents": {
+          "type": "integer"
+        }
+      }
+    },
+    "net_worth": {
+      "type": "object",
+      "required": [
+        "total_accounts_balance_cents",
+        "total_owed_to_you_cents",
+        "total_you_owe_cents",
+        "net_worth_cents"
+      ],
+      "properties": {
+        "total_accounts_balance_cents": {
+          "type": "integer"
+        },
+        "total_owed_to_you_cents": {
+          "type": "integer"
+        },
+        "total_you_owe_cents": {
+          "type": "integer"
+        },
+        "net_worth_cents": {
+          "type": "integer"
+        }
       }
     }
   }
