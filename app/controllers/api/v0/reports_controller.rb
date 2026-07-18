@@ -48,7 +48,7 @@ module Api::V0
         id:            number;
         name:          string;
         balance_cents: number;
-        currency_code: string;
+        currency_symbol: string | null;
       };
 
       type CategorySpend = {
@@ -104,7 +104,7 @@ module Api::V0
           param :id,            Integer, desc: "Account ID"
           param :name,          String,  desc: "Account name"
           param :balance_cents, Integer, desc: "Current balance in cents"
-          param :currency_code, String,  desc: "Currency code (e.g. USD)"
+          param :currency_symbol, String,  desc: "Currency symbol (e.g. $)"
         end
         param :total_balance_cents, Integer, desc: "Sum of all non-archived account balances in cents"
         param :spending_by_category, Array, desc: "Expense breakdown per category, sorted by amount descending" do

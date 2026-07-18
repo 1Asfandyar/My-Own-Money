@@ -27,6 +27,7 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
+        currency_symbol: string | null;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -43,6 +44,7 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -78,6 +80,7 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
+        currency_symbol: string | null;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -96,6 +99,7 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -136,6 +140,7 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
+        currency_symbol: string | null;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -156,6 +161,7 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -196,6 +202,7 @@ module Api::V0
         current_balance_cents: number;
         initial_balance_cents: number;
         is_archived: boolean;
+        currency_symbol: string | null;
         user_id: number;
         created_at: string; // ISO 8601
         updated_at: string; // ISO 8601
@@ -218,6 +225,7 @@ module Api::V0
         param :current_balance_cents, Integer, desc: "Current balance in cents"
         param :initial_balance_cents, Integer, desc: "Initial balance in cents"
         param :is_archived, :bool, desc: "Whether the account is archived"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"

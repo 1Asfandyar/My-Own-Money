@@ -5,8 +5,8 @@ module Api::V0
     fields :name, :current_balance_cents, :initial_balance_cents, :is_archived,
            :user_id, :created_at, :updated_at
 
-    field :currency_id do |account|
-      account.user.currency_id
+    field :currency_symbol do |account|
+      account.user.currency&.symbol
     end
   end
 end

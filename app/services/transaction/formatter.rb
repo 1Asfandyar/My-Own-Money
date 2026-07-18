@@ -36,7 +36,7 @@ class Transaction::Formatter < ApplicationService
       title:               txn.title,
       note:                txn.note,
       date:                txn.transaction_date.iso8601,
-      currency:            { code: txn.user.currency.code, symbol: txn.user.currency.symbol },
+      currency_symbol:     txn.user.currency.symbol,
       amount_cents:        txn.amount_cents,
       render_as:           render_as(txn, role),
       viewer_role:         role,

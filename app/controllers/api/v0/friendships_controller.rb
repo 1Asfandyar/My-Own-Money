@@ -140,7 +140,7 @@ module Api::V0
         title: string;
         note: string | null;
         date: string; // ISO 8601
-        currency: { code: string; symbol: string };
+        currency_symbol: string | null;
         amount_cents: number;
         render_as: "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
         viewer_role: "owner" | "payer" | "participant" | "settler" | "settlee";
@@ -209,10 +209,7 @@ module Api::V0
           param :title, String, desc: "Transaction title"
           param :note, String, desc: "Optional note (null if absent)"
           param :date, String, desc: "ISO 8601 transaction date"
-          param :currency, Hash, desc: "{ code, symbol } of the transaction currency" do
-            param :code, String, desc: "Currency code (e.g. USD)"
-            param :symbol, String, desc: "Currency symbol (e.g. $)"
-          end
+          param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
           param :amount_cents, Integer, desc: "Full amount paid by the payer, in cents"
           param :render_as, String, desc: "UI hint: shared_expense_payer or shared_expense_participant"
           param :viewer_role, String, desc: "Viewer's role: payer or participant"

@@ -87,7 +87,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "uses the user's currency in the response" do
         expect(response).to have_http_status(:created)
         data = JSON.parse(response.body)
-        expect(data.dig("transaction", "currency_id")).to eq(user.currency_id)
+        expect(data.dig("transaction", "currency_symbol")).to eq(user.currency.symbol)
       end
     end
 

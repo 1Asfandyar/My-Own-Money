@@ -96,7 +96,7 @@
         "id",
         "name",
         "balance_cents",
-        "currency_code"
+        "currency_symbol"
       ],
       "properties": {
         "id": {
@@ -108,7 +108,7 @@
         "balance_cents": {
           "type": "integer"
         },
-        "currency_code": {
+        "currency_symbol": {
           "type": "string"
         }
       }

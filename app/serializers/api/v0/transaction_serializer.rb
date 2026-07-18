@@ -6,8 +6,8 @@ module Api::V0
            :transaction_date, :note, :account_id, :transfer_account_id,
            :category_id, :settles_user_id, :user_id, :created_at, :updated_at
 
-    field :currency_id do |transaction|
-      transaction.user.currency_id
+    field :currency_symbol do |transaction|
+      transaction.user.currency&.symbol
     end
 
     view :with_categories do

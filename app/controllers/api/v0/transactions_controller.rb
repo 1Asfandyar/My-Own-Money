@@ -44,7 +44,7 @@ module Api::V0
         title:               string;
         note:                string | null;
         date:                string;          // ISO 8601
-        currency:            { code: string; symbol: string };
+        currency_symbol:     string | null;
         amount_cents:        number;
         render_as:           "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
         viewer_role:         "owner" | "payer" | "participant" | "settler" | "settlee";
@@ -101,10 +101,7 @@ module Api::V0
         param :title,               String,  desc: "Transaction title"
         param :note,                String,  desc: "Optional note (null if absent)"
         param :date,                String,  desc: "ISO 8601 transaction date"
-        param :currency,            Hash,    desc: "{ code, symbol } of the transaction currency" do
-          param :code,   String, desc: "Currency code (e.g. USD)"
-          param :symbol, String, desc: "Currency symbol (e.g. $)"
-        end
+        param :currency_symbol,     String,  desc: "Currency symbol (e.g. $)"
         param :amount_cents,        Integer, desc: "Full amount paid by the payer, in cents"
         param :render_as,           String,  desc: "UI hint: personal_expense, personal_income, transfer, shared_expense_payer, shared_expense_participant, settlement_settler, settlement_settlee"
         param :viewer_role,         String,  desc: "Viewer's role: owner, payer, participant, settler, settlee"
@@ -169,7 +166,7 @@ module Api::V0
         title:               string;
         note:                string | null;
         date:                string;          // ISO 8601
-        currency:            { code: string; symbol: string };
+        currency_symbol:     string | null;
         amount_cents:        number;
         render_as:           "personal_expense" | "personal_income" | "transfer" | "shared_expense_payer" | "shared_expense_participant" | "settlement_settler" | "settlement_settlee";
         viewer_role:         "owner" | "payer" | "participant" | "settler" | "settlee";
@@ -216,10 +213,7 @@ module Api::V0
         param :title,               String,  desc: "Transaction title"
         param :note,                String,  desc: "Optional note (null if absent)"
         param :date,                String,  desc: "ISO 8601 transaction date"
-        param :currency,            Hash,    desc: "{ code, symbol } of the transaction currency" do
-          param :code,   String, desc: "Currency code (e.g. USD)"
-          param :symbol, String, desc: "Currency symbol (e.g. $)"
-        end
+        param :currency_symbol,     String,  desc: "Currency symbol (e.g. $)"
         param :amount_cents,        Integer, desc: "Full amount paid by the payer, in cents"
         param :render_as,           String,  desc: "UI hint: personal_expense, personal_income, transfer, shared_expense_payer, shared_expense_participant, settlement_settler, settlement_settlee"
         param :viewer_role,         String,  desc: "Viewer's role: owner, payer, participant, settler, settlee"
@@ -351,7 +345,7 @@ module Api::V0
     param :group_id,        Integer, required: false, desc: "Group ID to link a shared expense to — current user must be a member of the group"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
     error code: 403, desc: "Forbidden — current user is not a member of the specified group"
-    error code: 404, desc: "Account, category, currency, group, or paid_to user not found"
+    error code: 404, desc: "Account, category, group, or paid_to user not found"
     error code: 422, desc: "Validation errors"
     returns code: 201, desc: "Transaction created" do
       param :success, :bool, desc: "Operation status"
@@ -367,6 +361,7 @@ module Api::V0
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers/settlements)"
         param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"
@@ -428,7 +423,7 @@ module Api::V0
     param :from_account_id, Integer, required: false, desc: "Source account ID (for transfer)"
     param :to_account_id, Integer, required: false, desc: "Destination account ID (for transfer)"
     error code: 401, desc: "Unauthorized — missing or invalid JWT"
-    error code: 404, desc: "Transaction, account, category, or currency not found"
+    error code: 404, desc: "Transaction, account, or category not found"
     error code: 422, desc: "Validation errors"
     returns code: 200, desc: "Success" do
       param :success, :bool, desc: "Operation status"
@@ -444,6 +439,7 @@ module Api::V0
         param :transfer_account_id, Integer, desc: "Destination account ID for transfers"
         param :category_id, Integer, desc: "Category ID (nil for transfers)"
         param :settles_user_id, Integer, desc: "User ID of the paid_to user (nil unless settlement)"
+        param :currency_symbol, String, desc: "Currency symbol (e.g. $)"
         param :user_id, Integer, desc: "Owner user ID"
         param :created_at, String, desc: "ISO 8601 creation timestamp"
         param :updated_at, String, desc: "ISO 8601 last-update timestamp"

@@ -173,7 +173,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       it "returns 200 and keeps currency sourced from user" do
         expect(response).to have_http_status(:ok)
         data = JSON.parse(response.body)
-        expect(data.dig("transaction", "currency_id")).to eq(user.currency_id)
+        expect(data.dig("transaction", "currency_symbol")).to eq(user.currency.symbol)
       end
     end
 

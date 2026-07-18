@@ -102,7 +102,7 @@ module Reports
           id:            account.id,
           name:          account.name,
           balance_cents: account.current_balance_cents,
-          currency_code: current_user.currency&.code
+          currency_symbol: current_user.currency&.symbol
         }
       end
     end
