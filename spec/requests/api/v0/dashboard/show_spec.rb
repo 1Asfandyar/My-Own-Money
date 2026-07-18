@@ -102,7 +102,7 @@ RSpec.describe "Api::V0::Dashboard", type: :request do
         expect(data.dig("summary", "total_you_owe_cents")).to eq(900)
       end
 
-      it "returns accepted friendships and includes zero-balance categories" do
+      it "returns accepted friendships and excludes zero-balance categories" do
         data = JSON.parse(response.body)
 
         friendship_ids = data.fetch("friendships").map { |f| f.fetch("id") }
@@ -110,7 +110,8 @@ RSpec.describe "Api::V0::Dashboard", type: :request do
         expect(friendship_ids).not_to include(pending_friendship.id)
 
         category_ids = data.fetch("categories").map { |c| c.fetch("id") }
-        expect(category_ids).to include(category_zero.id, category_non_zero.id)
+        expect(category_ids).to include(category_non_zero.id)
+        expect(category_ids).not_to include(category_zero.id)
       end
     end
 

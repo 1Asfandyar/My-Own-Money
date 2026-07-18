@@ -53,7 +53,7 @@ module Api::V0::Dashboard
     end
 
     def categories_data
-      result = Api::V0::Categories::Index.call({ include_zero_balance: true }, current_user: current_user)
+      result = Api::V0::Categories::Index.call({}, current_user: current_user)
       return Failure(result.failure) if result.failure?
 
       Success(result.value![:categories])
