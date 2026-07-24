@@ -3,7 +3,7 @@
 class Transaction::Transfer::Create < ApplicationService
   include Transaction::Helpers
 
-  def call(user:, title:, amount_cents:, from_account:, to_account:, transaction_date:, note: nil, currency: nil)
+  def call(user:, title:, amount_cents:, from_account:, to_account:, transaction_date:, note: nil)
     @user             = user
     @title            = title
     @amount_cents     = amount_cents
@@ -11,14 +11,13 @@ class Transaction::Transfer::Create < ApplicationService
     @to_account       = to_account
     @transaction_date = transaction_date
     @note             = note
-    @currency         = currency
     persist
   end
 
   private
 
   attr_reader :user, :title, :amount_cents, :from_account, :to_account,
-              :transaction_date, :note, :currency, :transaction
+              :transaction_date, :note, :transaction
 
   def persist
     ActiveRecord::Base.transaction do
@@ -40,8 +39,7 @@ class Transaction::Transfer::Create < ApplicationService
       account:          from_account,
       transfer_account: to_account,
       transaction_date: transaction_date,
-      note:             note,
-      currency:         currency || from_account.currency
+      note:             note
     }.compact
   end
 end

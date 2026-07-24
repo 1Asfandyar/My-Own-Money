@@ -6,9 +6,9 @@ RSpec.describe "Api::V0::Transactions", type: :request do
   let(:headers)      { { "Content-Type" => "application/json" } }
   let(:user)         { create(:user) }
   let(:currency)     { create(:currency) }
-  let(:account)      { create(:account, user: user, currency: currency) }
+  let(:account)      { create(:account, user: user) }
   let(:category)     { create(:category, user: user) }
-  let(:transaction)  { create(:transaction, user: user, account: account, currency: currency, category: category) }
+  let(:transaction)  { create(:transaction, user: user, account: account, category: category) }
 
   describe "GET /api/v0/transactions/:id" do
     let(:endpoint)        { "/api/v0/transactions/#{transaction.id}" }
@@ -42,8 +42,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
 
     context "when the transaction belongs to another user" do
       let(:other_user)      { create(:user) }
-      let(:other_account)   { create(:account, user: other_user, currency: currency) }
-      let(:other_transaction) { create(:transaction, user: other_user, account: other_account, currency: currency) }
+      let(:other_account)   { create(:account, user: other_user) }
+      let(:other_transaction) { create(:transaction, user: other_user, account: other_account) }
       let(:endpoint)        { "/api/v0/transactions/#{other_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
 

@@ -1,0 +1,271 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": [
+        "success",
+        "summary",
+        "accounts",
+        "categories",
+        "friendships"
+    ],
+    "properties": {
+        "success": {
+            "type": "boolean",
+            "enum": [
+                true
+            ]
+        },
+        "summary": {
+            "type": "object",
+            "required": [
+                "total_income",
+                "total_expense",
+                "total_owed_to_you_cents",
+                "total_you_owe_cents"
+            ],
+            "properties": {
+                "total_income": {
+                    "type": "integer"
+                },
+                "total_expense": {
+                    "type": "integer"
+                },
+                "total_owed_to_you_cents": {
+                    "type": "integer"
+                },
+                "total_you_owe_cents": {
+                    "type": "integer"
+                }
+            }
+        },
+        "accounts": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/account"
+            }
+        },
+        "categories": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/category"
+            }
+        },
+        "friendships": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/friendship"
+            }
+        }
+    },
+    "definitions": {
+        "account": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "current_balance_cents",
+                "initial_balance_cents",
+                "is_archived",
+                "currency_symbol",
+                "user_id",
+                "created_at",
+                "updated_at"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "current_balance_cents": {
+                    "type": "integer"
+                },
+                "initial_balance_cents": {
+                    "type": "integer"
+                },
+                "is_archived": {
+                    "type": "boolean"
+                },
+                "currency_symbol": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "category": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "icon",
+                "color",
+                "balance_cents",
+                "category_type",
+                "user_id",
+                "created_at",
+                "updated_at"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "color": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "balance_cents": {
+                    "type": "integer"
+                },
+                "category_type": {
+                    "type": "string",
+                    "enum": [
+                        "expense",
+                        "income"
+                    ]
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "friendship": {
+            "type": "object",
+            "required": [
+                "id",
+                "status",
+                "requested_by_id",
+                "friend",
+                "balance",
+                "created_at",
+                "updated_at"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "accepted",
+                        "blocked"
+                    ]
+                },
+                "requested_by_id": {
+                    "type": "integer"
+                },
+                "friend": {
+                    "$ref": "#/definitions/user"
+                },
+                "balance": {
+                    "$ref": "#/definitions/balance"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "user": {
+            "type": "object",
+            "required": [
+                "id",
+                "full_name",
+                "mobile_number",
+                "email",
+                "role",
+                "onboarding_completed",
+                "currency_id",
+                "currency_symbol",
+                "created_at",
+                "updated_at"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "onboarding_completed": {
+                    "type": "boolean"
+                },
+                "currency_id": {
+                    "type": "integer"
+                },
+                "currency_symbol": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "balance": {
+            "type": "object",
+            "required": [
+                "type",
+                "amount_cents"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "owes_you",
+                        "you_owe",
+                        "settled_up"
+                    ]
+                },
+                "amount_cents": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}

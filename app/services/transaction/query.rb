@@ -141,7 +141,7 @@ class Transaction::Query < ApplicationService
 
   def eager_load(scope)
     scope.includes(
-      :user, :account, :category, :currency, :group,
+      { user: :currency }, :account, :category, :group,
       :settles_user, :transfer_account,
       transaction_splits: [ :user, :category ]
     )

@@ -1,167 +1,440 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["success", "group"],
+  "required": [
+    "success",
+    "group"
+  ],
   "properties": {
-    "success": { "type": "boolean", "enum": [true] },
-    "group": { "$ref": "#/definitions/group" }
+    "success": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    },
+    "group": {
+      "$ref": "#/definitions/group"
+    }
   },
   "definitions": {
     "group": {
       "type": "object",
-      "required": ["id", "name", "created_by_id", "members", "transactions", "member_balances", "created_at", "updated_at"],
+      "required": [
+        "id",
+        "name",
+        "created_by_id",
+        "members",
+        "transactions",
+        "member_balances",
+        "created_at",
+        "updated_at"
+      ],
       "properties": {
-        "id":            { "type": "integer" },
-        "name":          { "type": "string" },
-        "description":   { "type": ["string", "null"] },
-        "created_by_id": { "type": "integer" },
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_by_id": {
+          "type": "integer"
+        },
         "members": {
           "type": "array",
-          "items": { "$ref": "#/definitions/member" }
+          "items": {
+            "$ref": "#/definitions/member"
+          }
         },
         "transactions": {
           "type": "array",
-          "items": { "$ref": "#/definitions/transaction" }
+          "items": {
+            "$ref": "#/definitions/transaction"
+          }
         },
-        "member_balances": { "$ref": "#/definitions/member_balances" },
-        "created_at": { "type": "string" },
-        "updated_at": { "type": "string" }
+        "member_balances": {
+          "$ref": "#/definitions/member_balances"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
       }
     },
     "member": {
       "type": "object",
-      "required": ["id", "full_name", "email"],
+      "required": [
+        "id",
+        "full_name",
+        "email"
+      ],
       "properties": {
-        "id":        { "type": "integer" },
-        "full_name": { "type": "string" },
-        "email":     { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "full_name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
       }
     },
     "transaction": {
       "type": "object",
-      "required": ["id", "type", "visibility", "title", "note", "date", "currency", "amount_cents",
-                   "render_as", "viewer_role", "summary", "paid_by", "account",
-                   "transfer_to_account", "category", "counterpart", "split_method", "splits"],
+      "required": [
+        "id",
+        "type",
+        "visibility",
+        "title",
+        "note",
+        "date",
+        "currency_symbol",
+        "amount_cents",
+        "render_as",
+        "viewer_role",
+        "summary",
+        "paid_by",
+        "account",
+        "transfer_to_account",
+        "category",
+        "counterpart",
+        "split_method",
+        "splits"
+      ],
       "properties": {
-        "id":                  { "type": "integer" },
-        "type":                { "type": "string", "enum": ["expense", "income", "transfer", "settlement"] },
-        "visibility":          { "type": "string", "enum": ["personal", "shared"] },
-        "title":               { "type": "string" },
-        "note":                { "type": ["string", "null"] },
-        "date":                { "type": "string" },
-        "currency":            { "$ref": "#/definitions/currency_ref" },
-        "amount_cents":        { "type": "integer" },
-        "render_as":           { "type": "string", "enum": ["personal_expense", "personal_income", "transfer", "shared_expense_payer", "shared_expense_participant", "settlement_settler", "settlement_settlee"] },
-        "viewer_role":         { "type": "string", "enum": ["owner", "payer", "participant", "settler", "settlee"] },
-        "summary":             { "$ref": "#/definitions/summary" },
-        "paid_by":             { "$ref": "#/definitions/user_with_is_you" },
-        "account":             { "$ref": "#/definitions/account_ref" },
-        "transfer_to_account": { "oneOf": [{ "$ref": "#/definitions/account_ref" }, { "type": "null" }] },
-        "category":            { "oneOf": [{ "$ref": "#/definitions/category_ref" }, { "type": "null" }] },
-        "counterpart":         { "oneOf": [{ "$ref": "#/definitions/user_ref" }, { "type": "null" }] },
-        "split_method":        { "type": ["string", "null"] },
-        "splits":              { "oneOf": [{ "type": "array", "items": { "$ref": "#/definitions/split" } }, { "type": "null" }] }
+        "id": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "expense",
+            "income",
+            "transfer",
+            "settlement"
+          ]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "personal",
+            "shared"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": "string"
+        },
+        "currency_symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "amount_cents": {
+          "type": "integer"
+        },
+        "render_as": {
+          "type": "string",
+          "enum": [
+            "personal_expense",
+            "personal_income",
+            "transfer",
+            "shared_expense_payer",
+            "shared_expense_participant",
+            "settlement_settler",
+            "settlement_settlee"
+          ]
+        },
+        "viewer_role": {
+          "type": "string",
+          "enum": [
+            "owner",
+            "payer",
+            "participant",
+            "settler",
+            "settlee"
+          ]
+        },
+        "summary": {
+          "$ref": "#/definitions/summary"
+        },
+        "paid_by": {
+          "$ref": "#/definitions/user_with_is_you"
+        },
+        "account": {
+          "$ref": "#/definitions/account_ref"
+        },
+        "transfer_to_account": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/account_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/category_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "counterpart": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/user_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "split_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "splits": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/split"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
       }
     },
     "summary": {
       "type": "object",
-      "required": ["label", "amount_cents", "paid_by_label"],
+      "required": [
+        "label",
+        "amount_cents",
+        "paid_by_label"
+      ],
       "properties": {
-        "label":         { "type": "string" },
-        "amount_cents":  { "type": "integer" },
-        "paid_by_label": { "type": "string" }
-      }
-    },
-    "currency_ref": {
-      "type": "object",
-      "required": ["code", "symbol"],
-      "properties": {
-        "code":   { "type": "string" },
-        "symbol": { "type": "string" }
+        "label": {
+          "type": "string"
+        },
+        "amount_cents": {
+          "type": "integer"
+        },
+        "paid_by_label": {
+          "type": "string"
+        }
       }
     },
     "account_ref": {
       "type": "object",
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
-        "id":   { "type": "integer" },
-        "name": { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
       }
     },
     "category_ref": {
       "type": "object",
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
-        "id":   { "type": "integer" },
-        "name": { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
       }
     },
     "user_ref": {
       "type": "object",
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
-        "id":   { "type": "integer" },
-        "name": { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
       }
     },
     "user_with_is_you": {
       "type": "object",
-      "required": ["id", "name", "is_you"],
+      "required": [
+        "id",
+        "name",
+        "is_you"
+      ],
       "properties": {
-        "id":     { "type": "integer" },
-        "name":   { "type": "string" },
-        "is_you": { "type": "boolean" }
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "is_you": {
+          "type": "boolean"
+        }
       }
     },
     "split": {
       "type": "object",
-      "required": ["user", "owed_amount_cents", "allocation_value", "category"],
+      "required": [
+        "user",
+        "owed_amount_cents",
+        "allocation_value",
+        "category"
+      ],
       "properties": {
-        "user":              { "$ref": "#/definitions/user_with_is_you" },
-        "owed_amount_cents": { "type": "integer" },
-        "allocation_value":  { "type": ["number", "null"] },
-        "category":          { "oneOf": [{ "$ref": "#/definitions/category_ref" }, { "type": "null" }] }
+        "user": {
+          "$ref": "#/definitions/user_with_is_you"
+        },
+        "owed_amount_cents": {
+          "type": "integer"
+        },
+        "allocation_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "category": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/category_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
       }
     },
     "balance": {
       "type": "object",
-      "required": ["type", "amount_cents"],
+      "required": [
+        "type",
+        "amount_cents"
+      ],
       "properties": {
-        "type":         { "type": "string", "enum": ["owes_you", "you_owe", "settled_up"] },
-        "amount_cents": { "type": "integer" }
+        "type": {
+          "type": "string",
+          "enum": [
+            "owes_you",
+            "you_owe",
+            "settled_up"
+          ]
+        },
+        "amount_cents": {
+          "type": "integer"
+        }
       }
     },
     "member_balance_entry": {
       "type": "object",
-      "required": ["from_user", "to_user", "amount_cents"],
+      "required": [
+        "from_user",
+        "to_user",
+        "amount_cents"
+      ],
       "properties": {
         "from_user": {
           "type": "object",
-          "required": ["id", "name", "is_you"],
+          "required": [
+            "id",
+            "name",
+            "is_you"
+          ],
           "properties": {
-            "id":     { "type": "integer" },
-            "name":   { "type": "string" },
-            "is_you": { "type": "boolean" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "is_you": {
+              "type": "boolean"
+            }
           }
         },
         "to_user": {
           "type": "object",
-          "required": ["id", "name", "is_you"],
+          "required": [
+            "id",
+            "name",
+            "is_you"
+          ],
           "properties": {
-            "id":     { "type": "integer" },
-            "name":   { "type": "string" },
-            "is_you": { "type": "boolean" }
+            "id": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "is_you": {
+              "type": "boolean"
+            }
           }
         },
-        "amount_cents": { "type": "integer" }
+        "amount_cents": {
+          "type": "integer"
+        }
       }
     },
     "member_balances": {
       "type": "object",
-      "required": ["overall", "per_member"],
+      "required": [
+        "overall",
+        "per_member"
+      ],
       "properties": {
-        "overall":    { "$ref": "#/definitions/balance" },
-        "per_member": { "type": "array", "items": { "$ref": "#/definitions/member_balance_entry" } }
+        "overall": {
+          "$ref": "#/definitions/balance"
+        },
+        "per_member": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/member_balance_entry"
+          }
+        }
       }
     }
   }

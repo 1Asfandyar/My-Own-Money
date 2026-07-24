@@ -3,6 +3,10 @@ module Api::V0
     identifier :id
 
     fields :name, :current_balance_cents, :initial_balance_cents, :is_archived,
-           :currency_id, :user_id, :created_at, :updated_at
+           :user_id, :created_at, :updated_at
+
+    field :currency_symbol do |account|
+      account.user.currency&.symbol
+    end
   end
 end

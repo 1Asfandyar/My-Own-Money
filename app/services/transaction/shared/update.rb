@@ -8,7 +8,7 @@ class Transaction::Shared::Update < ApplicationService
   # If neither is provided, participants are reconstructed from the existing splits.
   def call(transaction:, paid_by_user:, split_method:, amount_cents:,
            account:, category:, shared_by_users: nil, user_shares: nil,
-           title: nil, transaction_date: nil, note: nil, currency: nil)
+           title: nil, transaction_date: nil, note: nil)
     @transaction      = transaction
     @paid_by_user     = paid_by_user
     @split_method     = split_method.to_s
@@ -20,7 +20,6 @@ class Transaction::Shared::Update < ApplicationService
     @title            = title
     @transaction_date = transaction_date
     @note             = note
-    @currency         = currency
 
     persist
   end
@@ -29,7 +28,7 @@ class Transaction::Shared::Update < ApplicationService
 
   attr_reader :transaction, :paid_by_user, :split_method, :amount_cents,
               :account, :category, :shared_by_users, :user_shares,
-              :title, :transaction_date, :note, :currency
+              :title, :transaction_date, :note
 
   def persist
     old_splits       = transaction.transaction_splits.to_a
@@ -155,8 +154,7 @@ class Transaction::Shared::Update < ApplicationService
       amount_cents:     amount_cents,
       title:            title,
       transaction_date: transaction_date,
-      note:             note,
-      currency:         currency
+      note:             note
     }.compact
   end
 end

@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe "Api::V0::Currencies", type: :request do
   let(:headers) { { "Content-Type" => "application/json" } }
-  let(:user)    { create(:user) }
+  let(:user)    { create(:user, currency: nil) }
 
   describe "GET /api/v0/currencies" do
     let(:endpoint)        { "/api/v0/currencies" }

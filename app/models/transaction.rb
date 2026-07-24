@@ -56,7 +56,6 @@ class Transaction < ApplicationRecord
   belongs_to :user
   belongs_to :account
   belongs_to :category,         optional: true
-  belongs_to :currency
   belongs_to :group,            optional: true
   belongs_to :transfer_account, class_name: "Account", optional: true
   belongs_to :settles_user,    class_name: "User",    optional: true

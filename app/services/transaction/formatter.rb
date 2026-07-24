@@ -4,7 +4,7 @@
 # defined in docs/TRANSACTION_RESPONSE_FORMAT.md.
 #
 # Caller must eager-load before passing transactions:
-#   includes(:user, :account, :category, :currency,
+#   includes(user: :currency, :account, :category,
 #            :settles_user, :transfer_account,
 #            transaction_splits: [:user, :category])
 class Transaction::Formatter < ApplicationService
@@ -36,7 +36,7 @@ class Transaction::Formatter < ApplicationService
       title:               txn.title,
       note:                txn.note,
       date:                txn.transaction_date.iso8601,
-      currency:            { code: txn.currency.code, symbol: txn.currency.symbol },
+      currency_symbol:     txn.user.currency.symbol,
       amount_cents:        txn.amount_cents,
       render_as:           render_as(txn, role),
       viewer_role:         role,

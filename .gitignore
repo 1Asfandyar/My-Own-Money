@@ -54,3 +54,7 @@ vendor/bundle/
 /node_modules/
 /yarn-error.log
 .yarn-integrity
+
+# Ignore key files for decrypting credentials and more.
+/config/*.key
+

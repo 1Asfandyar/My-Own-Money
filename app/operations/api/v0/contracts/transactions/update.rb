@@ -14,7 +14,6 @@ module Api::V0::Contracts::Transactions
       optional(:category_id).maybe(:integer)
       optional(:transaction_date).filled(:string)
       optional(:note).maybe(:string)
-      optional(:currency_id).maybe(:integer)
 
       # shared expense fields
       optional(:paid_by_id).maybe(:integer)

@@ -8,7 +8,7 @@ RSpec.describe "Api::V0::Groups", type: :request do
   let(:group)           { create(:group, created_by: user) }
   let!(:membership)     { create(:groups_user, group: group, user: user) }
   let(:currency)        { create(:currency) }
-  let(:account)         { create(:account, user: user, currency: currency) }
+  let(:account)         { create(:account, user: user) }
 
   describe "GET /api/v0/groups/:id" do
     let(:endpoint) { "/api/v0/groups/#{group.id}" }
@@ -34,7 +34,7 @@ RSpec.describe "Api::V0::Groups", type: :request do
 
       before do
         shared_txn = create(:transaction, :shared, user: user, account: account,
-                             currency: currency, group: group, amount_cents: 1000)
+                             group: group, amount_cents: 1000)
         create(:transaction_split, financial_transaction: shared_txn, user: user, owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user, owed_amount_cents: 500)
         get endpoint, headers: headers.merge(auth_headers(user))
@@ -71,7 +71,7 @@ RSpec.describe "Api::V0::Groups", type: :request do
 
       before do
         shared_txn = create(:transaction, :shared, user: user, account: account,
-                             currency: currency, group: group, amount_cents: 1000)
+                             group: group, amount_cents: 1000)
         create(:transaction_split, financial_transaction: shared_txn, user: user, owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user, owed_amount_cents: 500)
         get endpoint, headers: headers.merge(auth_headers(user))
@@ -95,12 +95,12 @@ RSpec.describe "Api::V0::Groups", type: :request do
 
     context "when authenticated as a participant (non-payer) in a shared transaction" do
       let(:other_user)    { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
       let!(:membership2)  { create(:groups_user, group: group, user: other_user) }
 
       before do
         shared_txn = create(:transaction, :shared, user: other_user, account: other_account,
-                             currency: currency, group: group, amount_cents: 1000)
+                             group: group, amount_cents: 1000)
         create(:transaction_split, financial_transaction: shared_txn, user: other_user, owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: shared_txn, user: user, owed_amount_cents: 500)
         get endpoint, headers: headers.merge(auth_headers(user))
@@ -133,17 +133,17 @@ RSpec.describe "Api::V0::Groups", type: :request do
 
     context "when balances cancel out (mutual transactions between two members)" do
       let(:other_user)    { create(:user) }
-      let(:other_account) { create(:account, user: other_user, currency: currency) }
+      let(:other_account) { create(:account, user: other_user) }
       let!(:membership2)  { create(:groups_user, group: group, user: other_user) }
 
       before do
         txn1 = create(:transaction, :shared, user: user, account: account,
-                       currency: currency, group: group, amount_cents: 1000)
+                       group: group, amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn1, user: user, owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: txn1, user: other_user, owed_amount_cents: 500)
 
         txn2 = create(:transaction, :shared, user: other_user, account: other_account,
-                       currency: currency, group: group, amount_cents: 1000)
+                       group: group, amount_cents: 1000)
         create(:transaction_split, financial_transaction: txn2, user: other_user, owed_amount_cents: 500)
         create(:transaction_split, financial_transaction: txn2, user: user, owed_amount_cents: 500)
 
@@ -176,19 +176,19 @@ RSpec.describe "Api::V0::Groups", type: :request do
 
       let(:user2)         { create(:user) }
       let(:user3)         { create(:user) }
-      let(:account2)      { create(:account, user: user2, currency: currency) }
+      let(:account2)      { create(:account, user: user2) }
       let!(:membership2)  { create(:groups_user, group: group, user: user2) }
       let!(:membership3)  { create(:groups_user, group: group, user: user3) }
 
       before do
         txn1 = create(:transaction, :shared, user: user, account: account,
-                       currency: currency, group: group, amount_cents: 900)
+                       group: group, amount_cents: 900)
         create(:transaction_split, financial_transaction: txn1, user: user,  owed_amount_cents: 300)
         create(:transaction_split, financial_transaction: txn1, user: user2, owed_amount_cents: 300)
         create(:transaction_split, financial_transaction: txn1, user: user3, owed_amount_cents: 300)
 
         txn2 = create(:transaction, :shared, user: user2, account: account2,
-                       currency: currency, group: group, amount_cents: 600)
+                       group: group, amount_cents: 600)
         create(:transaction_split, financial_transaction: txn2, user: user2, owed_amount_cents: 200)
         create(:transaction_split, financial_transaction: txn2, user: user,  owed_amount_cents: 200)
         create(:transaction_split, financial_transaction: txn2, user: user3, owed_amount_cents: 200)

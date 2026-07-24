@@ -6,8 +6,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
   let(:headers)    { { "Content-Type" => "application/json" } }
   let(:user)       { create(:user) }
   let(:currency)   { create(:currency) }
-  let(:account)    { create(:account, user: user, currency: currency) }
-  let(:to_account) { create(:account, user: user, currency: currency) }
+  let(:account)    { create(:account, user: user) }
+  let(:to_account) { create(:account, user: user) }
   let(:category)   { create(:category, user: user) }
 
   let!(:transaction) do
@@ -15,8 +15,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
            user:             user,
            account:          account,
            category:         category,
-           currency:         currency,
-           transaction_type: :expense,
+                      transaction_type: :expense,
            visibility_type:  :personal,
            amount_cents:     5000,
            title:            "Groceries",
@@ -28,8 +27,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
            user:             user,
            account:          account,
            transfer_account: to_account,
-           currency:         currency,
-           amount_cents:     2000,
+                      amount_cents:     2000,
            title:            "Wallet top-up",
            transaction_date: Time.current).tap do
       account.update!(current_balance_cents: account.current_balance_cents - 2000)
@@ -46,8 +44,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
                user:             user,
                account:          account,
                category:         category,
-               currency:         currency,
-               transaction_type: :expense,
+                              transaction_type: :expense,
                visibility_type:  :shared,
                split_method:     :equal,
                amount_cents:     3000,
@@ -117,7 +114,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating account_id" do
-      let(:other_account)   { create(:account, user: user, currency: currency) }
+      let(:other_account)   { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { account_id: other_account.id } }
 
@@ -168,14 +165,15 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       end
     end
 
-    context "when updating currency_id" do
+    context "when sending currency_id in update payload" do
       let(:new_currency)    { create(:currency) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { currency_id: new_currency.id } }
 
-      it "returns 200 and persists the new currency" do
+      it "returns 200 and keeps currency sourced from user" do
         expect(response).to have_http_status(:ok)
-        expect(transaction.reload.currency_id).to eq(new_currency.id)
+        data = JSON.parse(response.body)
+        expect(data.dig("transaction", "currency_symbol")).to eq(user.currency.symbol)
       end
     end
 
@@ -211,7 +209,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating a transfer transaction's from_account" do
-      let(:new_from_account) { create(:account, user: user, currency: currency) }
+      let(:new_from_account) { create(:account, user: user) }
       let(:endpoint)         { "/api/v0/transactions/#{transfer_transaction.id}" }
       let(:request_headers)  { headers.merge(auth_headers(user)) }
       let(:request_params)   { { from_account_id: new_from_account.id } }
@@ -228,7 +226,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating a transfer transaction's to_account" do
-      let(:new_to_account)  { create(:account, user: user, currency: currency) }
+      let(:new_to_account)  { create(:account, user: user) }
       let(:endpoint)        { "/api/v0/transactions/#{transfer_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { to_account_id: new_to_account.id } }
@@ -245,7 +243,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when converting a personal expense to a transfer" do
-      let(:new_to_account)  { create(:account, user: user, currency: currency) }
+      let(:new_to_account)  { create(:account, user: user) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
         { transaction_type: "transfer", to_account_id: new_to_account.id }
@@ -403,7 +401,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { account_id: other_account.id } }
 
@@ -428,9 +426,8 @@ RSpec.describe "Api::V0::Transactions", type: :request do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { currency_id: 999_999 } }
 
-      it "returns 404 and matches error schema" do
-        expect(response).to have_http_status(:not_found)
-        expect(response).to match_json_schema("error_response")
+      it "returns 200 and ignores transaction-level currency overrides" do
+        expect(response).to have_http_status(:ok)
       end
     end
 
@@ -448,7 +445,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when from_account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:endpoint)        { "/api/v0/transactions/#{transfer_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { from_account_id: other_account.id } }
@@ -460,7 +457,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when to_account_id does not belong to the current user" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:endpoint)        { "/api/v0/transactions/#{transfer_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { to_account_id: other_account.id } }
@@ -496,7 +493,7 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when account_id does not belong to the effective payer on a shared expense" do
-      let(:other_account)   { create(:account, currency: currency) }
+      let(:other_account)   { create(:account) }
       let(:endpoint)        { "/api/v0/transactions/#{shared_transaction.id}" }
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params)  { { account_id: other_account.id } }
@@ -571,15 +568,14 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     # ── Settlement transaction updates ────────────────────────────────────────
 
     context "when updating a settlement transaction's title" do
-      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:user2_account) { create(:account, user: user2) }
       let(:settlement_txn) do
         user2_account.tap { user2.update!(default_account: user2_account) }
         create(:transaction, :settlement,
                user:         user,
                settles_user: user2,
                account:      account,
-               currency:     currency,
-               amount_cents: 1000,
+                              amount_cents: 1000,
                title:        "Old settle")
       end
       let(:endpoint)        { "/api/v0/transactions/#{settlement_txn.id}" }
@@ -597,15 +593,14 @@ RSpec.describe "Api::V0::Transactions", type: :request do
     end
 
     context "when updating a settlement transaction's amount_cents" do
-      let(:user2_account) { create(:account, user: user2, currency: currency) }
+      let(:user2_account) { create(:account, user: user2) }
       let(:settlement_txn) do
         user2_account.tap { user2.update!(default_account: user2_account) }
         create(:transaction, :settlement,
                user:         user,
                settles_user: user2,
                account:      account,
-               currency:     currency,
-               amount_cents: 1000,
+                              amount_cents: 1000,
                title:        "Old settle").tap do
           account.update!(current_balance_cents: -1000)
           user2_account.update!(current_balance_cents: 1000)

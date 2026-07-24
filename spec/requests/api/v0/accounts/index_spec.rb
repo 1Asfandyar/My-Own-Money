@@ -31,8 +31,8 @@ RSpec.describe "Api::V0::Accounts", type: :request do
     context "when authenticated with existing accounts" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:other_user)      { create(:user) }
-      let!(:own_accounts)   { create_list(:account, 2, user: user, currency: currency) }
-      let!(:other_account)  { create(:account, user: other_user, currency: currency) }
+      let!(:own_accounts)   { create_list(:account, 2, user: user) }
+      let!(:other_account)  { create(:account, user: other_user) }
 
       before { get endpoint, headers: request_headers }
 

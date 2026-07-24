@@ -1,32 +1,104 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["success", "transaction"],
+  "required": [
+    "success",
+    "transaction"
+  ],
   "properties": {
-    "success": { "type": "boolean", "enum": [true] },
-    "transaction": { "$ref": "#/definitions/transaction" }
+    "success": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    },
+    "transaction": {
+      "$ref": "#/definitions/transaction"
+    }
   },
   "definitions": {
     "transaction": {
       "type": "object",
-      "required": ["id", "title", "amount_cents", "transaction_type", "visibility_type", "transaction_date", "account_id", "currency_id", "user_id", "created_at", "updated_at"],
+      "required": [
+        "id",
+        "title",
+        "amount_cents",
+        "transaction_type",
+        "visibility_type",
+        "transaction_date",
+        "account_id",
+        "currency_symbol",
+        "user_id",
+        "created_at",
+        "updated_at"
+      ],
       "properties": {
-        "id":               { "type": "integer" },
-        "title":            { "type": "string" },
-        "amount_cents":     { "type": "integer" },
-        "transaction_type": { "type": "string" },
-        "visibility_type":  { "type": "string" },
-        "split_method":     { "type": ["string", "null"] },
-        "transaction_date": { "type": "string" },
-        "note":             { "type": ["string", "null"] },
-        "account_id":          { "type": "integer" },
-        "transfer_account_id": { "type": ["integer", "null"] },
-        "category_id":         { "type": ["integer", "null"] },
-        "settles_user_id":     { "type": ["integer", "null"] },
-        "currency_id":      { "type": "integer" },
-        "user_id":          { "type": "integer" },
-        "created_at":       { "type": "string" },
-        "updated_at":       { "type": "string" }
+        "id": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "amount_cents": {
+          "type": "integer"
+        },
+        "transaction_type": {
+          "type": "string"
+        },
+        "visibility_type": {
+          "type": "string"
+        },
+        "split_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transaction_date": {
+          "type": "string"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "account_id": {
+          "type": "integer"
+        },
+        "transfer_account_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "category_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "settles_user_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "currency_symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "user_id": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
       }
     }
   }

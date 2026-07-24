@@ -5,16 +5,14 @@ require "rails_helper"
 RSpec.describe "Api::V0::Accounts", type: :request do
   let(:headers)  { { "Content-Type" => "application/json" } }
   let(:user)     { create(:user) }
-  let(:currency) { create(:currency) }
 
   describe "POST /api/v0/accounts" do
     let(:endpoint)        { "/api/v0/accounts" }
     let(:request_headers) { headers }
     let(:name)            { "My Wallet" }
-    let(:currency_id)     { currency.id }
 
     let(:request_params) do
-      { name: name, currency_id: currency_id }
+      { name: name }
     end
 
     before do
@@ -38,7 +36,7 @@ RSpec.describe "Api::V0::Accounts", type: :request do
     context "when authenticated with optional balance params" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:request_params) do
-        { name: name, currency_id: currency_id, initial_balance_cents: 5000, current_balance_cents: 5000 }
+        { name: name, initial_balance_cents: 5000, current_balance_cents: 5000 }
       end
 
       it "returns 201 and persists balance values" do
@@ -60,16 +58,6 @@ RSpec.describe "Api::V0::Accounts", type: :request do
     context "when name is blank" do
       let(:request_headers) { headers.merge(auth_headers(user)) }
       let(:name)            { "" }
-
-      it "returns 422 and matches error schema" do
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to match_json_schema("error_response")
-      end
-    end
-
-    context "when currency_id does not exist" do
-      let(:request_headers) { headers.merge(auth_headers(user)) }
-      let(:currency_id)     { 0 }
 
       it "returns 422 and matches error schema" do
         expect(response).to have_http_status(:unprocessable_entity)

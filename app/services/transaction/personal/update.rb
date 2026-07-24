@@ -45,8 +45,7 @@ class Transaction::Personal::Update < ApplicationService
       account:          attrs[:account],
       category:         attrs[:category],
       transaction_date: attrs[:transaction_date],
-      note:             attrs[:note],
-      currency:         attrs[:currency]
+      note:             attrs[:note]
     }.compact
   end
 end

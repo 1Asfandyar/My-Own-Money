@@ -6,7 +6,7 @@ RSpec.describe "Api::V0::Accounts", type: :request do
   let(:headers)         { { "Content-Type" => "application/json" } }
   let(:user)            { create(:user) }
   let(:currency)        { create(:currency) }
-  let!(:account)        { create(:account, user: user, currency: currency) }
+  let!(:account)        { create(:account, user: user) }
   let(:request_headers) { headers }
   let(:new_name)        { "Updated Account Name" }
 
