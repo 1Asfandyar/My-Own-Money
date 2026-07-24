@@ -1,0 +1,51 @@
+# config/deploy.production.yml — Production environment overrides
+#
+# Activated with: kamal deploy -d production
+# Merged on top of config/deploy.yml at deploy time.
+#
+# Replace every <placeholder> before first deploy.
+
+# ── Servers ───────────────────────────────────────────────────────────────────
+servers:
+  web:
+    - <your-production-server-ip>     # e.g. 1.2.3.4
+  job:
+    hosts:
+      - <your-production-server-ip>
+    cmd: bin/jobs start
+
+# ── Environment variables ─────────────────────────────────────────────────────
+env:
+  clear:
+    RAILS_LOG_LEVEL: "info"
+    CORS_ALLOWED_ORIGINS: "https://<yourdomain.com>"
+  secret:
+    # Resolved from .kamal/secrets.production at deploy time
+    - RAILS_MASTER_KEY
+    - DATABASE_URL
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+
+# ── Proxy / TLS ───────────────────────────────────────────────────────────────
+proxy:
+  ssl: true
+  host: <yourdomain.com>     # Let's Encrypt auto-provisions SSL
+  app_port: 3000
+
+# ── Accessories ───────────────────────────────────────────────────────────────
+accessories:
+  db:
+    image: postgres:17-alpine
+    host: <your-production-server-ip>
+    port: "127.0.0.1:5432:5432"    # bind to localhost — never expose DB publicly
+    env:
+      clear:
+        POSTGRES_DB: mom_production
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+    volumes:
+      - mom_postgres_production:/var/lib/postgresql/data
+    options:
+      restart: always
+      shm-size: 256m
