@@ -48,6 +48,9 @@ gem "pagy"                    # fast pagination for API layer
 gem "solid_queue"
 gem "mission_control-jobs"
 
+# __ Error Tracking ─────────────────────────────────────────────────────────────
+gem "rollbar"
+
 # ─── Development + Test ───────────────────────────────────────────────────────
 group :development, :test do
   gem "debug", platforms: %i[mri windows jruby]  # replaces byebug (broken on Ruby 3.4)

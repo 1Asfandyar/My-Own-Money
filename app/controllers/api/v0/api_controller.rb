@@ -61,6 +61,7 @@ module Api::V0
 
     def handle_standard_error(exception)
       Rails.logger.error(exception.full_message)
+      Rollbar.error(exception)
       render json: error_payload("Something went wrong"), status: :internal_server_error
     end
 
